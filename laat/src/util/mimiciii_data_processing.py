@@ -4,17 +4,21 @@
 import pandas as pd
 import psycopg2
 import numpy as np
-from src.util.preprocessing import RECORD_SEPARATOR
+from preprocessing import RECORD_SEPARATOR
 import operator
 import os
+import nltk
 
+nltk.data.path.insert(0, os.path.join(os.path.expanduser('~'), 'data/nltk_data/'))
 conn = None
 from nltk.tokenize import sent_tokenize, RegexpTokenizer
 
 # keep only alphanumeric
 tokenizer = RegexpTokenizer(r'\w+')
 
+PASSWORD = os.environ['PSQL_PW']
 CHAPTER = 1
+
 THREE_CHARACTER = 2
 FULL = 3
 n_not_found = 0
@@ -136,7 +140,7 @@ def process_df(df, writer, cur, top_n_labels):
 def get_connection():
     global conn
     if conn is None:
-        conn = psycopg2.connect(database="mimic", user="username", password="password", host="localhost")
+        conn = psycopg2.connect(database="mimic", user="mimicuser", password=PASSWORD, host="dbs03.kdlan.iais.fraunhofer.de")
         # conn = psycopg2.connect(database="mimic", user="autocode", password="secret", host="localhost")
     return conn
 
