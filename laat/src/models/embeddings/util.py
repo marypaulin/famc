@@ -1,4 +1,4 @@
-from src.models.embeddings.embedding_layer import EmbeddingLayer
+from laat.src.models.embeddings.embedding_layer import EmbeddingLayer
 
 
 def init_embedding_layer(args, vocab):

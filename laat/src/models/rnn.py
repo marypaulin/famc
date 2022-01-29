@@ -8,9 +8,9 @@
 
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from src.models.attentions.util import *
-from src.models.embeddings.util import *
-from src.data_helpers.vocab import Vocab, device
+from laat.src.models.attentions.util import *
+from laat.src.models.embeddings.util import *
+from laat.src.data_helpers.vocab import Vocab, device
 
 
 class RNN(nn.Module):

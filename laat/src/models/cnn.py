@@ -10,10 +10,10 @@
     @date last modified: 19/08/2020
 
 """
-from src.models.tcn import *
-from src.data_helpers.vocab import Vocab
-from src.models.attentions.util import *
-from src.models.embeddings.util import *
+from laat.src.models.tcn import *
+from laat.src.data_helpers.vocab import Vocab
+from laat.src.models.attentions.util import *
+from laat.src.models.embeddings.util import *
 from math import floor
 
 

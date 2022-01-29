@@ -67,7 +67,7 @@ def read_config(problem_name: str) -> dict:
         The configuration of the input problem
     """
 
-    with open("configuration/config.json") as f:
+    with open("laat/configuration/config.json") as f:
         configuration = json.load(f)
     return configuration[problem_name]
 

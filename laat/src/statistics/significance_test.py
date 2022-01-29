@@ -1,4 +1,4 @@
-from src.util.util import *
+from laat.src.util.util import *
 import pickle as pkl
 from tqdm import tqdm
 import random

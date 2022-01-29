@@ -1,8 +1,8 @@
-from src.evaluator import *
+from laat.src.evaluator import *
 import numpy as np
 import os
 from torch.autograd import Variable
-from src.models.attentions.attention_layer import *
+from laat.src.models.attentions.attention_layer import *
 np.set_printoptions(precision=5)
 from tqdm import tqdm
 from collections import OrderedDict

@@ -1,6 +1,6 @@
 import argparse
-from src.models.rnn import *
-from src.models.cnn import *
+from laat.src.models.rnn import *
+from laat.src.models.cnn import *
 
 
 def create_args_parser():

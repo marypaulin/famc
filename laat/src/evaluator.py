@@ -1,8 +1,8 @@
-from src.data_helpers.dataloaders import *
+from laat.src.data_helpers.dataloaders import *
 import warnings
-from src.data_helpers.vocab import device
+from laat.src.data_helpers.vocab import device
 
-from src.util.util import *
+from laat.src.util.util import *
 from tqdm import tqdm
 from collections import OrderedDict
 

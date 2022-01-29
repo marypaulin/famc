@@ -7,7 +7,7 @@
 """
 import torch
 from torch.utils.data import DataLoader, Dataset
-from src.util.preprocessing import SENTENCE_SEPARATOR, RECORD_SEPARATOR
+from laat.src.util.preprocessing import SENTENCE_SEPARATOR, RECORD_SEPARATOR
 from torch.nn.utils.rnn import pad_sequence
 import random
 from tqdm import tqdm

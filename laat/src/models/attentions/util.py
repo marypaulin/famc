@@ -1,4 +1,4 @@
-from src.models.attentions.attention_layer import *
+from laat.src.models.attentions.attention_layer import *
 
 
 def init_attention_layer(model):

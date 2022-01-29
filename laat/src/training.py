@@ -1,13 +1,13 @@
 from torch import optim
 
-from src.util.preprocessing import *
-from src.util.util import to_md5
-from src.util.util import get_n_training_labels
+from laat.src.util.preprocessing import *
+from laat.src.util.util import to_md5
+from laat.src.util.util import get_n_training_labels
 
-from src.data_helpers.dataloaders import TextDataset, TextDataLoader
-from src.trainer import Trainer
-from src.evaluator import Evaluator
-from src.args_parser import *
+from laat.src.data_helpers.dataloaders import TextDataset, TextDataLoader
+from laat.src.trainer import Trainer
+from laat.src.evaluator import Evaluator
+from laat.src.args_parser import *
 import pickle
 import pprint
 
