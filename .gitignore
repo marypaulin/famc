@@ -1,3 +1,5 @@
 laat/data/
 laat/src/util/__pycache__/
 __pycache__/
+laat/cached_data/
+laat/log_files/
