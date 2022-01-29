@@ -5,8 +5,7 @@
 # Methods: GxI, IG, SHAP
 
 import config
-import dataloader
-# import modelloader
+import loader
 # import attributor
 
 if __name__ == "__main__":
@@ -19,9 +18,9 @@ if __name__ == "__main__":
     # attrs_args['shap'] = config.SHAP_ARGS
 
     # Load mimic data
-    data, train_data, valid_data, test_data, vocab, args = dataloader.load_data(laat_args)
+    data, train_data, valid_data, test_data, vocab, args = loader.load_data(laat_args)
     # Create dataloader for test set for feature attribution experiments
-    test_dataloader = dataloader.create_dataloader(test_data, vocab, args)
+    test_dataloader = loader.create_dataloader(test_data, vocab, args)
 
     # # Load models
     # caml = modelloader.load_caml(caml_args)
