@@ -253,13 +253,13 @@ def get_model_setting(args):
     return model_setting
 
 
-def prepare_data():
+def prepare_data(args):
     import logging
     if len(logging.getLogger().handlers) > 0:
         logging.getLogger().handlers.pop()  # This is to remove the transformer logger
 
     parser = create_args_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     logger = create_logger(logger_name=_create_log_file_folder(args))
     logger.info("Training with \n{}\n".format(pprint.pformat(args.__dict__, indent=4)))
 
@@ -341,6 +341,6 @@ def prepare_data():
     if args.metric_level >= vocab.n_level():
         args.metric_level = vocab.n_level() - 1
 
-    return training_data, valid_data, test_data, vocab, args, logger, cached_file_name
+    return data, training_data, valid_data, test_data, vocab, args, logger, cached_file_name
 
 
