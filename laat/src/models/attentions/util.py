@@ -7,7 +7,7 @@ def init_attention_layer(model):
             model.attention = AttentionLayer(args=model.args, size=model.output_size,
                                              n_labels=model.vocab.all_n_labels(), n_level=model.vocab.n_level())
 
-        model.linears = nn.ModuleList([nn.Linear(model.output_size + model.vocab.n_labels(level))
+        model.linears = nn.ModuleList([nn.Linear(model.output_size, model.vocab.n_labels(level))
                                        for level in range(model.vocab.n_level())])
 
     elif model.args.joint_mode == "hierarchical":
