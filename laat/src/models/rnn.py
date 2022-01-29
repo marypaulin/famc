@@ -94,6 +94,7 @@ class RNN(nn.Module):
             embeds = self.dropout(embeds)
 
         self.rnn.flatten_parameters()
+        lengths = lengths.cpu()
         embeds = pack_padded_sequence(embeds, lengths, batch_first=True)
 
         rnn_output, hidden = self.rnn(embeds, hidden)
