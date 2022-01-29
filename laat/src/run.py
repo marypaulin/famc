@@ -1,7 +1,8 @@
-from src.training import *
+from laat.src.training import *
 import os
-from src.util.util import set_random_seed
+from laat.src.util.util import set_random_seed
 import copy
+import config
 
 # set the random seed if needed, disable by default
 # set_random_seed(random_seed=42)
@@ -13,13 +14,14 @@ def generate_checkpoint_dir_path(args):
     del cp_args.n_epoch, cp_args.patience, cp_args.save_results, cp_args.save_best_model, cp_args.save_results_on_train
     del cp_args.resume_training, cp_args.problem_name, cp_args.metric_level, cp_args.main_metric
 
-    checkpoint_dir_path = "checkpoints/{}/{}".format(args.problem_name,
+    checkpoint_dir_path = "laat/checkpoints/{}/{}".format(args.problem_name,
                                                      "{}_{}".format(model_setting, to_md5("{}".format(cp_args))))
     return checkpoint_dir_path
 
 
 def main():
-    training_data, valid_data, test_data, vocab, args, logger, saved_vocab_path = prepare_data()
+    args = config.LAAT_ARGS
+    data, training_data, valid_data, test_data, vocab, args, logger, saved_vocab_path = prepare_data(args)
     logger.info("{}.{}.{}".format(len(training_data), len(valid_data), len(test_data)))
     saved_data_file_path = "{}.data.pkl".format(saved_vocab_path.split(".pkl")[0])
 

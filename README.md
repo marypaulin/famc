@@ -12,8 +12,14 @@ LAAT and CAML are trained on the MIMIC-III dataset. Access to the dataset is res
 
 Install the MIMIC-III database with PostgreSQL following this instruction.
 
-Generate the train/valid/test sets from within laat/ using
-`PSQL_PW='INSERT_PW_HERE' python3 src/util/mimiciii_data_processing.py`
+Generate the train/valid/test sets using
+`PSQL_PW='INSERT_PW_HERE' python3 laat/src/util/mimiciii_data_processing.py` (TODO: verify)
+
+## Models
+
+Trained versions of LAAT and CAML are available in the respective subfolders.
+
+In case you need to retrain LAAT, run `python3 -m laat.src.run`
 
 ## TODO README
 
