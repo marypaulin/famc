@@ -9,6 +9,7 @@ LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--dropout", "0.3",
     "--level_projection_size", "128",
     "--joint_mode", "flat",
+    "--best_model_path", "laat/checkpoints/mimic-iii_2_full/RNN_LSTM_1_512.static.label.0.001.0.3_6cf2bdaddfad25d86a03293d8999d3ba/best_model.pkl",
     "--main_metric", "micro_f1",
     "--embedding_mode", "word2vec",
     "--embedding_file", "laat/data/embeddings/word2vec_sg0_100.model",
@@ -19,4 +20,4 @@ LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--n_layers", "1",
     "--bidirectional", "1",
     "--hidden_size", "512"
-    ]
+]

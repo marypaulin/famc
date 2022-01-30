@@ -18,13 +18,15 @@ if __name__ == "__main__":
     # attrs_args['shap'] = config.SHAP_ARGS
 
     # Load mimic data
-    data, train_data, valid_data, test_data, vocab, args = loader.load_data(laat_args)
-    # Create dataloader for test set for feature attribution experiments
-    test_dataloader = loader.create_dataloader(test_data, vocab, args)
+    data, train_data, valid_data, test_data, vocab, laat_args_new = loader.load_data(laat_args)
 
-    # # Load models
-    # caml = modelloader.load_caml(caml_args)
-    # laat = modelloader.load_laat(laat_args)
+    # Create dataloader for test set for feature attribution experiments
+    test_dataloader = loader.create_dataloader(test_data, vocab, laat_args_new)
+
+    # Load models
+    laat = loader.load_laat(vocab, laat_args_new)
+    print(type(laat))
+    # caml = loader.load_caml(caml_args)
 
     # # Calculate feature attributions
     # attributor = attributor.Attributor(test_data, vocab, args)
