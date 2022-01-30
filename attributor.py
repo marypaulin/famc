@@ -13,6 +13,13 @@ import torch
 
 def ig_on_laat(laat, vocab, dataloader):
     device = vocab.device
+    label_level = 1
+
+    # Define model wrapper
+    def laat_wrapper(*args, **kwargs):
+        output, attn_weights = laat(*args, **kwargs)
+        return torch.sigmoid(output[label_level])
+
     # Create token reference aka baseline value
     PAD_IND = vocab.index_of_word(vocab.PAD_TOKEN)
     tok_ref_base = TokenReferenceBase(reference_token_idx=PAD_IND)
@@ -31,6 +38,13 @@ def ig_on_laat(laat, vocab, dataloader):
         base_embed_batch = int_emb.indices_to_embeddings(base_indices_batch).to(device)
         print("text_embed_batch.size():", text_embed_batch.size())
         print("base_embed_batch.size():", base_embed_batch.size())
+
+        # Get predictions for texts and baselines
+        preds = laat_wrapper(text_embed_batch, length_batch)
+        print(preds.size())
+        preds_base = laat_wrapper(base_embed_batch, length_batch)
+        print(preds_base.size())
+
         break
 
     # Remove interpretable embedding layer
