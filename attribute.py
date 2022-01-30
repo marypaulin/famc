@@ -6,7 +6,7 @@
 
 import config
 import loader
-# import attributor
+import attributor
 
 if __name__ == "__main__":
     # Load config args
@@ -25,11 +25,10 @@ if __name__ == "__main__":
 
     # Load models
     laat = loader.load_laat(vocab, laat_args_new)
-    print(type(laat))
     # caml = loader.load_caml(caml_args)
 
-    # # Calculate feature attributions
-    # attributor = attributor.Attributor(test_data, vocab, args)
+    # Calculate feature attributions
+    attrs_laat_ig = attributor.ig_on_laat(laat, vocab, test_dataloader)
     # attrs_all = {}
     # attrs['caml']['gxi'] = attributor.gxi(caml)
     # attrs['caml']['ig'] = attributor.ig(caml)
