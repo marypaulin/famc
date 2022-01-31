@@ -3,6 +3,7 @@ from captum.attr import configure_interpretable_embedding_layer
 from captum.attr import remove_interpretable_embedding_layer
 from captum.attr import IntegratedGradients
 from captum.metrics import infidelity
+from captum.metrics import sensitivity_max
 import torch
 import numpy as np
 
@@ -76,8 +77,18 @@ def ig_on_laat(laat, vocab, dataloader):
                                         attrs, \
                                         target = target_index, \
                                         additional_forward_args = length)
+
+                    # Compute max_sensitivity score for attributions
+                    # maxsens = sensitivity_max(ig.attribute, \
+                    #                             input_embed, \
+                    #                             n_perturb_samples = 1, \
+                    #                             baselines = base_embed, \
+                    #                             target = target_index, \
+                    #                             additional_forward_args = length)
+
                     attrs_all.append(attrs)
                     infids_all.append(infid)
+                    # maxsens_all.append(maxsens)
             break
         break
 
@@ -86,4 +97,4 @@ def ig_on_laat(laat, vocab, dataloader):
 
     laat.train(mode=False)
 
-    return attrs_all, infids_all
+    return attrs_all, infids_all, maxsens_all

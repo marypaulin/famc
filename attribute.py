@@ -28,8 +28,8 @@ if __name__ == "__main__":
     # caml = loader.load_caml(caml_args)
 
     # Calculate feature attributions
-    attrs_laat_ig, infids_laat_ig = attributor.ig_on_laat(laat, vocab, test_dataloader)
-    print(infids_laat_ig)
+    attrs_laat_ig, infids_laat_ig, maxsens_laat_ig = attributor.ig_on_laat(laat, vocab, test_dataloader)
+    print(maxsens_laat_ig)
     # attrs_all = {}
     # attrs['caml']['gxi'] = attributor.gxi(caml)
     # attrs['caml']['ig'] = attributor.ig(caml)
