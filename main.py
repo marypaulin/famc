@@ -6,7 +6,7 @@
 
 import config
 import loader
-import attributor
+import evaluator
 
 if __name__ == "__main__":
     # Load config args
@@ -28,16 +28,16 @@ if __name__ == "__main__":
     # caml = loader.load_caml(caml_args)
 
     # Calculate feature attributions
-    infids_laat, maxsens_laat = attributor.evaluate_laat(laat, vocab, test_dataloader)
+    infids_laat, maxsens_laat = evaluator.evaluate_laat(laat, vocab, test_dataloader)
     print(infids_laat)
 
     # attrs_all = {}
-    # attrs['caml']['gxi'] = attributor.gxi(caml)
-    # attrs['caml']['ig'] = attributor.ig(caml)
-    # attrs['caml']['shap'] = attributor.shap(caml)
-    # attrs['laat']['gxi'] = attributor.gxi(laat)
-    # attrs['laat']['ig'] = attributor.ig(laat)
-    # attrs['laat']['shap'] = attributor.shap(laat)
+    # attrs['caml']['gxi'] = evaluator.gxi(caml)
+    # attrs['caml']['ig'] = evaluator.ig(caml)
+    # attrs['caml']['shap'] = evaluator.shap(caml)
+    # attrs['laat']['gxi'] = evaluator.gxi(laat)
+    # attrs['laat']['ig'] = evaluator.ig(laat)
+    # attrs['laat']['shap'] = evaluator.shap(laat)
 
     # # Save attributions to files
     # for model, attrs_per_method in attrs_all:
