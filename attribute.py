@@ -1,4 +1,4 @@
-# Calculate feature attributions
+# Calculate feature attributions, infidelity, and max_sensitivity
 # for all texts, for all labels, for both models, for all methods
 # Analyse running time
 # Models: LAAT, CAML
@@ -28,8 +28,9 @@ if __name__ == "__main__":
     # caml = loader.load_caml(caml_args)
 
     # Calculate feature attributions
-    attrs_laat_ig, infids_laat_ig, maxsens_laat_ig = attributor.ig_on_laat(laat, vocab, test_dataloader)
-    print(maxsens_laat_ig)
+    infids_laat, maxsens_laat = attributor.evaluate_laat(laat, vocab, test_dataloader)
+    print(infids_laat)
+
     # attrs_all = {}
     # attrs['caml']['gxi'] = attributor.gxi(caml)
     # attrs['caml']['ig'] = attributor.ig(caml)
