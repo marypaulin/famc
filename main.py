@@ -17,18 +17,18 @@ if __name__ == "__main__":
     # attr_args = config.ATTR_ARGS
 
     # Load mimic data for laat
-    # laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new = loader.load_laat_data(laat_args)
+    laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new = loader.load_laat_data(laat_args)
 
     # Create dataloader for laat test set
-    # laat_test_dataloader = loader.create_laat_dataloader(laat_test_data, laat_vocab, laat_args_new)
+    laat_test_dataloader = loader.create_laat_dataloader(laat_test_data, laat_vocab, laat_args_new)
 
     # Load laat model
-    # laat = loader.load_laat(laat_vocab, laat_args_new)
+    laat = loader.load_laat(laat_vocab, laat_args_new)
 
     # Compute infid and maxsens on laat for ig and shap
-    # laat_infids, laat_maxsens, laat_times = evaluator.evaluate_laat(laat, laat_vocab, laat_test_dataloader)
+    laat_infids, laat_maxsens, laat_times = evaluator.evaluate_laat(laat, laat_vocab, laat_test_dataloader)
 
-    # del laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new, laat_test_dataloader, laat
+    del laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new, laat_test_dataloader, laat
 
     # Load caml model
     caml, caml_args_new, caml_dicts = loader.load_caml(caml_args)
@@ -39,10 +39,10 @@ if __name__ == "__main__":
     # Compute infid and maxsens on caml for ig and shap
     caml_infids, caml_maxsens, caml_times = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
 
-    infids = {'caml': caml_infids}
+    infids = {'laat': laat_infids, 'caml': caml_infids}
     with open('results/infids.txt', 'w') as file:
         file.write(json.dumps(infids))
 
-    times = {'caml': caml_times}
+    times = {'laat': laat_times, 'caml': caml_times}
     with open('results/times.txt', 'w') as file:
         file.write(json.dumps(times))
