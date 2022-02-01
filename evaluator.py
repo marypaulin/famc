@@ -12,6 +12,7 @@ from statistics import mean
 import time
 
 def evaluate_laat(laat, vocab, dataloader):
+    print("Evaluating LAAT")
     device = vocab.device
     label_level = 1
 
@@ -56,9 +57,7 @@ def evaluate_laat(laat, vocab, dataloader):
         # Attribute input for labels with pred > 0.5
         for target_index, pred in enumerate(preds):
             if pred.item() > 0.5:
-                print("target_index:", target_index)
                 # Compute ixg attributions
-                print("Computing ixg attributions")
                 start_ixg = time.time()
                 attrs_ixg = ixg.attribute(input_embed, \
                                         additional_forward_args = length, \
@@ -66,7 +65,6 @@ def evaluate_laat(laat, vocab, dataloader):
                 end_ixg = time.time()
                 time_ixg = round(end_ixg - start_ixg, 2)
                 # Compute ig attributions
-                print("Computing ig attributions")
                 start_ig = time.time()
                 attrs_ig = ig.attribute(input_embed, \
                                     base_embed, \
@@ -77,7 +75,6 @@ def evaluate_laat(laat, vocab, dataloader):
                 end_ig = time.time()
                 time_ig = round(end_ig - start_ig, 4)
                 # Compute shap attributions
-                print("Computing shap attributions")
                 # For some reason, KernelShap needs length in different shape
                 length = length.unsqueeze(0)
                 start_shap = time.time()
@@ -90,7 +87,6 @@ def evaluate_laat(laat, vocab, dataloader):
                 time_shap = round(end_shap - start_shap, 4)
                 length = length.squeeze(0)
                 # Compute infidelity score for ixg attributions
-                print("Computing infidelity for ixg attributions")
                 infid_ixg = infidelity(laat_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -99,7 +95,6 @@ def evaluate_laat(laat, vocab, dataloader):
                                     target = target_index, \
                                     additional_forward_args = length)
                 # Compute infidelity score for ig attributions
-                print("Computing infidelity for ig attributions")
                 infid_ig = infidelity(laat_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -108,7 +103,6 @@ def evaluate_laat(laat, vocab, dataloader):
                                     target = target_index, \
                                     additional_forward_args = length)
                 # Compute infidelity score for shap attributions
-                print("Computing infidelity for shap attributions")
                 infid_shap = infidelity(laat_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -132,8 +126,6 @@ def evaluate_laat(laat, vocab, dataloader):
                 times['ixg'].append(time_ixg)
                 times['ig'].append(time_ig)
                 times['shap'].append(time_shap)
-                break
-        break
 
     remove_interpretable_embedding_layer(laat, int_emb)
     laat.train(mode=False)
@@ -149,9 +141,11 @@ def evaluate_laat(laat, vocab, dataloader):
     for method, values in times.items():
         mean_times[method] = mean(values)
 
+    print("Finished")
     return mean_infids, mean_maxsens, mean_times
 
 def evaluate_caml(caml, dicts, dataloader):
+    print("Evaluating CAML")
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     n_labels = len(dicts['ind2c'])
 
@@ -192,9 +186,7 @@ def evaluate_caml(caml, dicts, dataloader):
         # Attribute input for labels with pred > 0.5
         for target_index, pred in enumerate(preds):
             if pred.item() > 0.5:
-                print("target_index:", target_index)
                 # Compute ixg attributions
-                print("Computing ixg attributions")
                 start_ixg = time.time()
                 attrs_ixg = ixg.attribute(input_embed, \
                                         additional_forward_args = y_true, \
@@ -202,7 +194,6 @@ def evaluate_caml(caml, dicts, dataloader):
                 end_ixg = time.time()
                 time_ixg = round(end_ixg - start_ixg, 2)
                 # Compute ig attributions
-                print("Computing ig attributions")
                 start_ig = time.time()
                 attrs_ig = ig.attribute(input_embed, \
                                     base_embed, \
@@ -213,7 +204,6 @@ def evaluate_caml(caml, dicts, dataloader):
                 end_ig = time.time()
                 time_ig = round(end_ig - start_ig, 4)
                 # Compute shap attributions
-                print("Computing shap attributions")
                 # For some reason, KernelShap needs y_true in different shape
                 y_true = y_true.unsqueeze(0)
                 start_shap = time.time()
@@ -226,7 +216,6 @@ def evaluate_caml(caml, dicts, dataloader):
                 time_shap = round(end_shap - start_shap, 4)
                 y_true = y_true.squeeze(0)
                 # Compute infidelity score for ixg attributions
-                print("Computing infidelity for ixg attributions")
                 infid_ixg = infidelity(caml_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -235,7 +224,6 @@ def evaluate_caml(caml, dicts, dataloader):
                                     target = target_index, \
                                     additional_forward_args = y_true)
                 # Compute infidelity score for ig attributions
-                print("Computing infidelity for ig attributions")
                 infid_ig = infidelity(caml_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -244,7 +232,6 @@ def evaluate_caml(caml, dicts, dataloader):
                                     target = target_index, \
                                     additional_forward_args = y_true)
                 # Compute infidelity score for shap attributions
-                print("Computing infidelity for shap attributions")
                 infid_shap = infidelity(caml_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -268,8 +255,6 @@ def evaluate_caml(caml, dicts, dataloader):
                 times['ixg'].append(time_ixg)
                 times['ig'].append(time_ig)
                 times['shap'].append(time_shap)
-                break
-        break
 
     remove_interpretable_embedding_layer(caml, int_emb)
     caml.train(mode=False)
@@ -285,4 +270,5 @@ def evaluate_caml(caml, dicts, dataloader):
     for method, values in times.items():
         mean_times[method] = mean(values)
 
+    print("Finished")
     return mean_infids, mean_maxsens, mean_times
