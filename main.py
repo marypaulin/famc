@@ -8,6 +8,8 @@ import config
 import loader
 import evaluator
 
+import json
+
 if __name__ == "__main__":
     # Load config args
     laat_args = config.LAAT_ARGS
@@ -38,3 +40,7 @@ if __name__ == "__main__":
     # Compute infid and maxsens on caml for ig and shap
     caml_infids, caml_maxsens = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
     print(caml_infids)
+
+    infids = {'caml': caml_infids}
+    with open('results/infids.txt', 'w') as file:
+        file.write(json.dumps(infids))

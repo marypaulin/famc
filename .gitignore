@@ -4,3 +4,4 @@ __pycache__/
 laat/cached_data/
 laat/log_files/
 laat/checkpoints/
+results/
