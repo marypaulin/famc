@@ -12,8 +12,8 @@ import sys
 from sklearn.metrics import roc_curve, auc
 from tqdm import tqdm
 
-from constants import *
-import datasets
+from caml.constants import *
+import caml.datasets as datasets
 
 def all_metrics(yhat, y, k=8, yhat_raw=None, calc_auc=True):
     """

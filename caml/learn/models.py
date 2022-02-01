@@ -15,8 +15,8 @@ import random
 import sys
 import time
 
-from constants import *
-from dataproc import extract_wvs
+from caml.constants import *
+from caml.dataproc import extract_wvs
 
 class BaseModel(nn.Module):
 

@@ -10,10 +10,10 @@ import pickle
 import torch
 from torch.autograd import Variable
 
-from learn import models
-from constants import *
-import datasets
-import persistence
+from caml.learn import models
+from caml.constants import *
+import caml.datasets as datasets
+import caml.persistence as persistence
 import numpy as np
 
 def pick_model(args, dicts):

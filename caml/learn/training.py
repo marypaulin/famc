@@ -17,13 +17,13 @@ import time
 from tqdm import tqdm
 from collections import defaultdict
 
-from constants import *
-import datasets
-import evaluation
-import interpret
-import persistence
-import learn.models as models
-import learn.tools as tools
+from caml.constants import *
+import caml.datasets as datasets
+import caml.evaluation as evaluation
+import caml.learn.interpret as interpret
+import caml.persistence as persistence
+import caml.learn.models as models
+import caml.learn.tools as tools
 
 def main(args):
     start = time.time()

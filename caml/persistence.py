@@ -7,8 +7,8 @@ import json
 import numpy as np
 import torch
 
-from constants import *
-from learn import models
+from caml.constants import *
+from caml.learn import models
 
 def save_metrics(metrics_hist_all, model_dir):
     with open(model_dir + "/metrics.json", 'w') as metrics_file:

@@ -7,7 +7,7 @@ import math
 import numpy as np
 import sys
 
-from constants import *
+from caml.constants import *
 
 class Batch:
     """

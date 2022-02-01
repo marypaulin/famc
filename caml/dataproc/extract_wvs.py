@@ -6,8 +6,8 @@ import os
 import gensim.models
 from tqdm import tqdm
 
-from constants import *
-import datasets
+from caml.constants import *
+import caml.datasets as datasets
 
 import numpy as np
 
