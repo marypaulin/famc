@@ -2,14 +2,15 @@ import laat.src.training as laattraining
 import laat.src.data_helpers.dataloaders as dataloaders
 import laat.src.models.rnn as rnn
 import caml.learn.training as camltraining
+import caml.datasets as datasets
 import torch
 import argparse
 
-def load_data(args):
+def load_laat_data(args):
     data, train_data, valid_data, test_data, vocab, args_new, logger, cached_file_name = laattraining.prepare_data(args)
     return data, train_data, valid_data, test_data, vocab, args_new
 
-def create_dataloader(data, vocab, args):
+def create_laat_dataloader(data, vocab, args):
     dataset = dataloaders.TextDataset(data, vocab,
                                max_seq_length=args.max_seq_length,
                                min_seq_length=args.min_seq_length,
@@ -85,3 +86,13 @@ def load_caml(args):
     args_new.command = command
     args_final, model, optimizer, params, dicts = camltraining.init(args_new)
     return model, args_final, dicts
+
+def create_caml_dataloader(args, dicts):
+    version = args.version
+    data_path = args.data_path
+    filename = args.data_path.replace('train', 'dev')   # Using test data
+    n_labels = len(dicts['ind2c'])
+    desc_embed = False  # Not using DR-CAML
+    ind2w = dicts['ind2w']
+    dataloader = datasets.data_generator(filename, dicts, 1, n_labels, version=version, desc_embed=desc_embed)
+    return dataloader
