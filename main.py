@@ -26,8 +26,7 @@ if __name__ == "__main__":
     # laat = loader.load_laat(laat_vocab, laat_args_new)
 
     # Compute infid and maxsens on laat for ig and shap
-    # laat_infids, laat_maxsens = evaluator.evaluate_laat(laat, laat_vocab, laat_test_dataloader)
-    # print(laat_infids)
+    # laat_infids, laat_maxsens, laat_times = evaluator.evaluate_laat(laat, laat_vocab, laat_test_dataloader)
 
     # del laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new, laat_test_dataloader, laat
 
@@ -38,9 +37,12 @@ if __name__ == "__main__":
     caml_test_dataloader = loader.create_caml_dataloader(caml_args_new, caml_dicts)
 
     # Compute infid and maxsens on caml for ig and shap
-    caml_infids, caml_maxsens = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
-    print(caml_infids)
+    caml_infids, caml_maxsens, caml_times = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
 
     infids = {'caml': caml_infids}
     with open('results/infids.txt', 'w') as file:
         file.write(json.dumps(infids))
+
+    times = {'caml': caml_times}
+    with open('results/times.txt', 'w') as file:
+        file.write(json.dumps(times))
