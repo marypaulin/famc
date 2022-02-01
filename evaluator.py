@@ -7,6 +7,7 @@ from captum.metrics import infidelity
 from captum.metrics import sensitivity_max
 import torch
 import numpy as np
+from statistics import mean
 
 def evaluate_laat(laat, vocab, dataloader):
     device = vocab.device
@@ -37,9 +38,7 @@ def evaluate_laat(laat, vocab, dataloader):
     # Load data in batches of size 1, create baseline, get embeds
     # Note: We can't use the advantages of batch processing for the attributions
     # because of the prediction threshold
-    infids = {}
-    infids['ig'] = []
-    infids['shap'] = []
+    infids = {'ig': [], 'shap': []}
     maxsens = {}
     for input_indices, labels, length, id_batch in dataloader:
         input_indices = input_indices.to(device)
@@ -105,12 +104,18 @@ def evaluate_laat(laat, vocab, dataloader):
                 break
         break
 
-    # Remove interpretable embedding layer
     remove_interpretable_embedding_layer(laat, int_emb)
-
     laat.train(mode=False)
 
-    return infids, maxsens
+    # Compute mean infids and maxsens
+    mean_infids = {}
+    for method, values in infids.items():
+        mean_infids[method] = mean(values)
+    mean_maxsens = {}
+    for method, values in maxsens.items():
+        mean_maxsens[method] = mean(values)
+
+    return mean_infids, mean_maxsens
 
 def evaluate_caml(caml, dicts, dataloader):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -135,9 +140,7 @@ def evaluate_caml(caml, dicts, dataloader):
     int_emb = configure_interpretable_embedding_layer(caml, 'embed')
 
     # Load data in batches of size 1, create baseline, get embeds
-    infids = {}
-    infids['ig'] = []
-    infids['shap'] = []
+    infids = {'ig': [], 'shap': []}
     maxsens = {}
     for batch_idx, tup in enumerate(dataloader):
         input_indices, y_true, hadm_ids, _, descs = tup
@@ -205,9 +208,15 @@ def evaluate_caml(caml, dicts, dataloader):
                 break
         break
 
-    # Remove interpretable embedding layer
     remove_interpretable_embedding_layer(caml, int_emb)
-
     caml.train(mode=False)
 
-    return infids, maxsens
+    # Compute mean infids and maxsens
+    mean_infids = {}
+    for method, values in infids.items():
+        mean_infids[method] = mean(values)
+    mean_maxsens = {}
+    for method, values in maxsens.items():
+        mean_maxsens[method] = mean(values)
+
+    return mean_infids, mean_maxsens
