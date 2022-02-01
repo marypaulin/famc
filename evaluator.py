@@ -1,6 +1,7 @@
 from captum.attr import TokenReferenceBase
 from captum.attr import configure_interpretable_embedding_layer
 from captum.attr import remove_interpretable_embedding_layer
+from captum.attr import InputXGradient
 from captum.attr import IntegratedGradients
 from captum.attr import KernelShap
 from captum.metrics import infidelity
@@ -26,6 +27,7 @@ def evaluate_laat(laat, vocab, dataloader):
 
     # Make sure model is in train mode and create attributors
     laat.train()
+    ixg = InputXGradient(laat_wrapper)
     ig = IntegratedGradients(laat_wrapper)
     ks = KernelShap(laat_wrapper)
 
@@ -39,9 +41,9 @@ def evaluate_laat(laat, vocab, dataloader):
     # Load data in batches of size 1, create baseline, get embeds
     # Note: We can't use the advantages of batch processing for the attributions
     # because of the prediction threshold
-    infids = {'ig': [], 'shap': []}
+    infids = {'ixg': [], 'ig': [], 'shap': []}
     maxsens = {}
-    times = {'ig': [], 'shap': []}
+    times = {'ixg': [], 'ig': [], 'shap': []}
     for input_indices, labels, length, id_batch in dataloader:
         input_indices = input_indices.to(device)
         input_embed = int_emb.indices_to_embeddings(input_indices).to(device)
@@ -55,6 +57,14 @@ def evaluate_laat(laat, vocab, dataloader):
         for target_index, pred in enumerate(preds):
             if pred.item() > 0.5:
                 print("target_index:", target_index)
+                # Compute ixg attributions
+                print("Computing ixg attributions")
+                start_ixg = time.time()
+                attrs_ixg = ixg.attribute(input_embed, \
+                                        additional_forward_args = length, \
+                                        target = target_index)
+                end_ixg = time.time()
+                time_ixg = round(end_ixg - start_ixg, 2)
                 # Compute ig attributions
                 print("Computing ig attributions")
                 start_ig = time.time()
@@ -79,8 +89,17 @@ def evaluate_laat(laat, vocab, dataloader):
                 end_shap = time.time()
                 time_shap = round(end_shap - start_shap, 4)
                 length = length.squeeze(0)
-                print("Computing infidelity for ig attributions")
+                # Compute infidelity score for ixg attributions
+                print("Computing infidelity for ixg attributions")
+                infid_ixg = infidelity(laat_wrapper, \
+                                    perturb_function, \
+                                    input_embed, \
+                                    base_embed, \
+                                    attrs_ixg, \
+                                    target = target_index, \
+                                    additional_forward_args = length)
                 # Compute infidelity score for ig attributions
+                print("Computing infidelity for ig attributions")
                 infid_ig = infidelity(laat_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -88,8 +107,8 @@ def evaluate_laat(laat, vocab, dataloader):
                                     attrs_ig, \
                                     target = target_index, \
                                     additional_forward_args = length)
-                print("Computing infidelity for shap attributions")
                 # Compute infidelity score for shap attributions
+                print("Computing infidelity for shap attributions")
                 infid_shap = infidelity(laat_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -106,9 +125,11 @@ def evaluate_laat(laat, vocab, dataloader):
                 #                             target = target_index, \
                 #                             additional_forward_args = length)
 
+                infids['ixg'].append(infid_ixg.cpu().item())
                 infids['ig'].append(infid_ig.cpu().item())
                 infids['shap'].append(infid_shap.cpu().item())
                 # maxsens['ig'].append(maxsens_ig)
+                times['ixg'].append(time_ixg)
                 times['ig'].append(time_ig)
                 times['shap'].append(time_shap)
                 break
@@ -146,6 +167,7 @@ def evaluate_caml(caml, dicts, dataloader):
 
     # Make sure model is in train mode and create attributors
     caml.train()
+    ixg = InputXGradient(caml_wrapper)
     ig = IntegratedGradients(caml_wrapper)
     ks = KernelShap(caml_wrapper)
 
@@ -153,9 +175,9 @@ def evaluate_caml(caml, dicts, dataloader):
     int_emb = configure_interpretable_embedding_layer(caml, 'embed')
 
     # Load data in batches of size 1, create baseline, get embeds
-    infids = {'ig': [], 'shap': []}
+    infids = {'ixg': [], 'ig': [], 'shap': []}
     maxsens = {}
-    times = {'ig': [], 'shap': []}
+    times = {'ixg': [], 'ig': [], 'shap': []}
     for batch_idx, tup in enumerate(dataloader):
         input_indices, y_true, hadm_ids, _, descs = tup
         input_indices, y_true = torch.LongTensor(input_indices), torch.FloatTensor(y_true)
@@ -171,6 +193,14 @@ def evaluate_caml(caml, dicts, dataloader):
         for target_index, pred in enumerate(preds):
             if pred.item() > 0.5:
                 print("target_index:", target_index)
+                # Compute ixg attributions
+                print("Computing ixg attributions")
+                start_ixg = time.time()
+                attrs_ixg = ixg.attribute(input_embed, \
+                                        additional_forward_args = y_true, \
+                                        target = target_index)
+                end_ixg = time.time()
+                time_ixg = round(end_ixg - start_ixg, 2)
                 # Compute ig attributions
                 print("Computing ig attributions")
                 start_ig = time.time()
@@ -195,8 +225,17 @@ def evaluate_caml(caml, dicts, dataloader):
                 end_shap = time.time()
                 time_shap = round(end_shap - start_shap, 4)
                 y_true = y_true.squeeze(0)
-                print("Computing infidelity for ig attributions")
+                # Compute infidelity score for ixg attributions
+                print("Computing infidelity for ixg attributions")
+                infid_ixg = infidelity(caml_wrapper, \
+                                    perturb_function, \
+                                    input_embed, \
+                                    base_embed, \
+                                    attrs_ixg, \
+                                    target = target_index, \
+                                    additional_forward_args = y_true)
                 # Compute infidelity score for ig attributions
+                print("Computing infidelity for ig attributions")
                 infid_ig = infidelity(caml_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -204,8 +243,8 @@ def evaluate_caml(caml, dicts, dataloader):
                                     attrs_ig, \
                                     target = target_index, \
                                     additional_forward_args = y_true)
-                print("Computing infidelity for shap attributions")
                 # Compute infidelity score for shap attributions
+                print("Computing infidelity for shap attributions")
                 infid_shap = infidelity(caml_wrapper, \
                                     perturb_function, \
                                     input_embed, \
@@ -222,9 +261,11 @@ def evaluate_caml(caml, dicts, dataloader):
                 #                             target = target_index, \
                 #                             additional_forward_args = y_true)
 
+                infids['ixg'].append(infid_ixg.cpu().item())
                 infids['ig'].append(infid_ig.cpu().item())
                 infids['shap'].append(infid_shap.cpu().item())
                 # maxsens['ig'].append(maxsens_ig)
+                times['ixg'].append(time_ixg)
                 times['ig'].append(time_ig)
                 times['shap'].append(time_shap)
                 break
