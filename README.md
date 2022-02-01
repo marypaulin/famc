@@ -8,12 +8,14 @@ Run `conda create --name famc --file requirements.txt` and `conda activate famc`
 
 ## Data preparation
 
-LAAT and CAML are trained on the MIMIC-III dataset. Access to the dataset is restricted, visit physionet.org for more information. The feature attribution experiments use the preprocessing from LAAT:
+LAAT and CAML are trained on the MIMIC-III dataset. Access to the dataset is restricted, visit physionet.org for more information. The feature attribution experiments use the preprocessing from LAAT and CAML, respectively.
 
-Install the MIMIC-III database with PostgreSQL following this instruction.
+For LAAT data, install the MIMIC-III database with PostgreSQL following this instruction.
 
 Generate the train/valid/test sets using
 `PSQL_PW='INSERT_PW_HERE' python3 laat/src/util/mimiciii_data_processing.py` (TODO: verify)
+
+For CAML data, TBD
 
 ## Models
 
