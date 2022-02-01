@@ -8,10 +8,6 @@ from captum.metrics import sensitivity_max
 import torch
 import numpy as np
 
-# def caml_wrapper(*args, **kwargs):
-#     y_hat, loss, alpha = caml(*args, **kwargs)
-#     return torch.sigmoid(y_hat)
-
 def evaluate_laat(laat, vocab, dataloader):
     device = vocab.device
     label_level = 1
@@ -113,5 +109,105 @@ def evaluate_laat(laat, vocab, dataloader):
     remove_interpretable_embedding_layer(laat, int_emb)
 
     laat.train(mode=False)
+
+    return infids, maxsens
+
+def evaluate_caml(caml, dicts, dataloader):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    n_labels = len(dicts['ind2c'])
+
+    # Define model wrapper to return probabilities
+    def caml_wrapper(*args, **kwargs):
+        y_hat, loss, alpha = caml(*args, **kwargs)
+        return torch.sigmoid(y_hat)
+
+    # Define a perturbation function for the infidelity metric
+    def perturb_function(input_embeds, base_embeds):
+        noise = torch.tensor(np.random.normal(0, 0.003, base_embeds.shape)).float().to(device)
+        return noise, input_embeds - (base_embeds + noise)
+
+    # Make sure model is in train mode and create attributors
+    caml.train()
+    ig = IntegratedGradients(caml_wrapper)
+    ks = KernelShap(caml_wrapper)
+
+    # Create interpretable embedding layer for attribution and evaluation
+    int_emb = configure_interpretable_embedding_layer(caml, 'embed')
+
+    # Load data in batches of size 1, create baseline, get embeds
+    infids = {}
+    infids['ig'] = []
+    infids['shap'] = []
+    maxsens = {}
+    for batch_idx, tup in enumerate(dataloader):
+        input_indices, y_true, hadm_ids, _, descs = tup
+        input_indices, y_true = torch.LongTensor(input_indices), torch.FloatTensor(y_true)
+        input_indices = input_indices.to(device)
+        y_true = y_true.to(device)
+        input_embed = int_emb.indices_to_embeddings(input_indices).to(device)
+        base_embed = torch.zeros_like(input_embed).to(device)
+
+        # Get prediction for input
+        preds = caml_wrapper(input_embed, y_true, desc_data=None, get_attention=False)[0]
+
+        # Attribute input for labels with pred > 0.5
+        for target_index, pred in enumerate(preds):
+            if pred.item() > 0.5:
+                print("target_index:", target_index)
+                # Compute ig attributions
+                print("Computing ig attributions")
+                attrs_ig = ig.attribute(input_embed, \
+                                    base_embed, \
+                                    internal_batch_size = 8, \
+                                    additional_forward_args = y_true, \
+                                    target = target_index, \
+                                    n_steps = 50).float()
+                # Compute shap attributions
+                print("Computing shap attributions")
+                # For some reason, KernelShap needs y_true in different shape
+                y_true = y_true.unsqueeze(0)
+                with torch.no_grad():
+                    attrs_shap = ks.attribute(input_embed, \
+                                        target = target_index, \
+                                        n_samples = 50, \
+                                        additional_forward_args = y_true)
+                y_true = y_true.squeeze(0)
+                print("Computing infidelity for ig attributions")
+                # Compute infidelity score for ig attributions
+                infid_ig = infidelity(caml_wrapper, \
+                                    perturb_function, \
+                                    input_embed, \
+                                    base_embed, \
+                                    attrs_ig, \
+                                    target = target_index, \
+                                    additional_forward_args = y_true)
+                print("Computing infidelity for shap attributions")
+                # Compute infidelity score for shap attributions
+                infid_shap = infidelity(caml_wrapper, \
+                                    perturb_function, \
+                                    input_embed, \
+                                    base_embed, \
+                                    attrs_shap, \
+                                    target = target_index, \
+                                    additional_forward_args = y_true)
+
+                # Compute max_sensitivity score for ig attributions
+                # maxsens_ig = sensitivity_max(ig.attribute, \
+                #                             input_embed, \
+                #                             n_perturb_samples = 1, \
+                #                             baselines = base_embed, \
+                #                             target = target_index, \
+                #                             additional_forward_args = y_true)
+
+                infids['ig'].append(infid_ig.cpu().item())
+                infids['shap'].append(infid_shap.cpu().item())
+                # maxsens['ig'].append(maxsens_ig)
+                break
+        break
+
+    # Remove interpretable embedding layer
+    remove_interpretable_embedding_layer(caml, int_emb)
+
+    caml.train(mode=False)
 
     return infids, maxsens

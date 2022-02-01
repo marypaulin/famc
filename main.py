@@ -36,5 +36,5 @@ if __name__ == "__main__":
     caml_test_dataloader = loader.create_caml_dataloader(caml_args_new, caml_dicts)
 
     # Compute infid and maxsens on caml for ig and shap
-    # caml_infids, caml_maxsens = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
-    # print(caml_infids)
+    caml_infids, caml_maxsens = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
+    print(caml_infids)
