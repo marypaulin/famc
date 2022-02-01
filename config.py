@@ -21,3 +21,20 @@ LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--bidirectional", "1",
     "--hidden_size", "512"
 ]
+
+# CAML args from evaluate_model.sh
+CAML_ARGS = [
+    "caml/mimicdata/mimic3/train_full.csv",
+    "caml/mimicdata/mimic3/vocab.csv",
+    "full",
+    "conv_attn",
+    "200",
+    "--filter-size", "10",
+    "--num-filter-maps", "50",
+    "--dropout", "0.2",
+    "--patience", "10",
+    "--lr", "0.0001",
+    "--public-model",
+    "--test-model", "caml/predictions/CAML_mimic3_full/model.pth",
+    "--gpu"
+]

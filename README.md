@@ -27,3 +27,4 @@ In case you need to retrain LAAT, run `python3 -m laat.src.run`
 - Insert requirements and create file requirements.txt
 - Insert link for Postgres instruction
 - Explain the experiments (high-level)
+- Explain CAML preprocessing and adjust jupyter notebook
