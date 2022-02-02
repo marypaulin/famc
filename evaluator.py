@@ -11,10 +11,11 @@ import numpy as np
 from statistics import mean
 import time
 import random
+import sys
 
 import config
 
-METHODS = config.METHODS
+METHOD = sys.argv[1]
 SUBSET = config.SUBSET
 THRESHOLD = config.THRESHOLD
 N_STEPS = config.N_STEPS
@@ -28,64 +29,55 @@ def perturb_function(input_embed, base_embed):
     noise = torch.tensor(np.random.normal(0, DEVIATION, base_embed.shape)).float().to(DEVICE)
     return noise, input_embed - (base_embed + noise)
 
-def evaluate_sample(model_wrapper, attributors, preds, input_embed, base_embed, afa):
+def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, afa):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
-    infids = {method: [] for method in METHODS}
-    maxsens = {method: [] for method in METHODS}
-    times = {method: [] for method in METHODS}
+    infids = []
+    maxsens = []
+    times = []
     for target_idx, pred in enumerate(preds):
         if pred.item() > THRESHOLD:
-            attrs = {}
-            # Compute ixg attributions
-            start_ixg = time.time()
-            attrs['ixg'] = attributors['ixg'].attribute(input_embed, \
-                                additional_forward_args = afa, \
-                                target = target_idx)
-            end_ixg = time.time()
-            times['ixg'].append(round(end_ixg - start_ixg, 4))
-
-            # Compute ig attributions
-            start_ig = time.time()
-            attrs['ig'] = attributors['ig'].attribute(input_embed, \
-                                base_embed, \
-                                internal_batch_size = INT_BATCH, \
-                                additional_forward_args = afa, \
+            # Compute attributions
+            start = time.time()
+            if METHOD == 'ixg':
+                attrs = attributor.attribute(input_embed, \
+                            additional_forward_args = afa, \
+                            target = target_idx)
+            elif METHOD == 'ig':
+                attrs = attributor.attribute(input_embed, \
+                            base_embed, \
+                            internal_batch_size = INT_BATCH, \
+                            additional_forward_args = afa, \
+                            target = target_idx, \
+                            n_steps = N_STEPS).float()
+            elif METHOD == 'shap':
+                # For some reason, KernelShap needs afa in different shape
+                afa = afa.unsqueeze(0)
+                with torch.no_grad():
+                    attrs = attributor.attribute(input_embed, \
                                 target = target_idx, \
-                                n_steps = N_STEPS).float()
-            end_ig = time.time()
-            times['ig'].append(round(end_ig - start_ig, 4))
-
-            # Compute shap attributions
-            # For some reason, KernelShap needs afa in different shape
-            afa = afa.unsqueeze(0)
-            start_shap = time.time()
-            with torch.no_grad():
-                attrs['shap'] = attributors['shap'].attribute(input_embed, \
-                                    target = target_idx, \
-                                    n_samples = 50, \
-                                    additional_forward_args = afa)
-            end_shap = time.time()
-            times['shap'].append(round(end_shap - start_shap, 4))
-            afa = afa.squeeze(0)
+                                n_samples = N_SAMPLES, \
+                                additional_forward_args = afa)
+                afa = afa.squeeze(0)
+            end = time.time()
+            times.append(round(end - start, 4))
 
             # Compute infidelity and maxsens scores
-            for method in METHODS:
-                infid = infidelity(model_wrapper, \
-                                perturb_function, \
-                                input_embed, \
-                                base_embed, \
-                                attrs[method], \
-                                target = target_idx, \
-                                additional_forward_args = afa)
-                # maxsen = sensitivity_max(attributors[method].attribute, \
-                #                             input_embed, \
-                #                             n_perturb_samples = 1, \
-                #                             baselines = base_embed, \
-                #                             target = target_idx, \
-                #                             additional_forward_args = afa)
+            infid = infidelity(model_wrapper, \
+                        perturb_function, \
+                        input_embed, \
+                        base_embed, \
+                        attrs, \
+                        target = target_idx, \
+                        additional_forward_args = afa)
+            # maxsen = sensitivity_max(attributor.attribute, \
+            #                             input_embed, \
+            #                             n_perturb_samples = 1, \
+            #                             baselines = base_embed, \
+            #                             target = target_idx, \
+            #                             additional_forward_args = afa)
 
-                infids[method].append(infid.cpu().item())
-                # maxsens[method].append(maxsen.cpu().item())
+            infids.append(infid.cpu().item())
+            # maxsens.append(maxsen.cpu().item())
     return infids, maxsens, times
 
 def evaluate_laat(laat, vocab, dataloader):
@@ -97,10 +89,12 @@ def evaluate_laat(laat, vocab, dataloader):
 
     # Make sure model is in train mode and create attributors
     laat.train()
-    attributors = {}
-    attributors['ixg'] = InputXGradient(laat_wrapper)
-    attributors['ig'] = IntegratedGradients(laat_wrapper)
-    attributors['shap'] = KernelShap(laat_wrapper)
+    if METHOD == 'ixg':
+        attributor = InputXGradient(laat_wrapper)
+    elif METHOD == 'ig':
+        attributor = IntegratedGradients(laat_wrapper)
+    elif METHOD == 'shap':
+        attributor = KernelShap(laat_wrapper)
 
     # Create token reference aka baseline value
     # Note: Turns out to be zero
@@ -113,9 +107,9 @@ def evaluate_laat(laat, vocab, dataloader):
     # Load data in batches of size 1
     # Note: We can't use the advantages of batch processing for attribution
     # because of the prediction threshold
-    infids = {method: [] for method in METHODS}
-    maxsens = {method: [] for method in METHODS}
-    times = {method: [] for method in METHODS}
+    infids = []
+    maxsens = []
+    times = []
     for idx, tup in enumerate(dataloader):
         # Evaluate only a subset of the dataset
         if random.random() > SUBSET:
@@ -133,28 +127,23 @@ def evaluate_laat(laat, vocab, dataloader):
         preds = laat_wrapper(input_embed, length)[0]
 
         # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(laat_wrapper, attributors, preds, input_embed, base_embed, length)
+        infids_sample, maxsens_sample, times_sample = evaluate_sample(laat_wrapper, attributor, preds, input_embed, base_embed, length)
 
         # Append results
-        for method in METHODS:
-            infids[method].extend(infids_sample[method])
-            maxsens[method].extend(maxsens_sample[method])
-            times[method].extend(times_sample[method])
+        infids.extend(infids_sample)
+        maxsens.extend(maxsens_sample)
+        times.extend(times_sample)
 
     remove_interpretable_embedding_layer(laat, int_emb)
     laat.train(mode=False)
 
-    # Compute mean infids, maxsens, times
-    mean_infids = {}
-    mean_maxsens = {}
-    mean_times = {}
-    for method in METHODS:
-        mean_infids[method] = mean(infids[method]) if len(infids[method]) > 0 else 0
-        # mean_maxsens[method] = mean(maxsens[method]) if len(maxsens[method]) > 0 else 0
-        mean_times[method] = mean(times[method]) if len(times[method]) > 0 else 0
+    # Compute mean infid, maxsen, time
+    mean_infid = mean(infids) if len(infids) > 0 else 0
+    mean_maxsen = mean(maxsens) if len(maxsens) > 0 else 0
+    mean_time = mean(times) if len(times) > 0 else 0
 
     print("Finished")
-    return mean_infids, mean_maxsens, mean_times
+    return mean_infid, mean_maxsen, mean_time
 
 def evaluate_caml(caml, dicts, dataloader):
     print("Evaluating CAML")
@@ -165,18 +154,20 @@ def evaluate_caml(caml, dicts, dataloader):
 
     # Make sure model is in train mode and create attributors
     caml.train()
-    attributors = {}
-    attributors['ixg'] = InputXGradient(caml_wrapper)
-    attributors['ig'] = IntegratedGradients(caml_wrapper)
-    attributors['shap'] = KernelShap(caml_wrapper)
+    if METHOD == 'ixg':
+        attributor = InputXGradient(caml_wrapper)
+    elif METHOD == 'ig':
+        attributor = IntegratedGradients(caml_wrapper)
+    elif METHOD == 'shap':
+        attributor = KernelShap(caml_wrapper)
 
     # Create interpretable embedding layer for attribution and evaluation
     int_emb = configure_interpretable_embedding_layer(caml, 'embed')
 
     # Load data in batches of size 1
-    infids = {method: [] for method in METHODS}
-    maxsens = {method: [] for method in METHODS}
-    times = {method: [] for method in METHODS}
+    infids = []
+    maxsens = []
+    times = []
     for idx, tup in enumerate(dataloader):
         # Evaluate only a subset of the dataset
         if random.random() > SUBSET:
@@ -194,26 +185,20 @@ def evaluate_caml(caml, dicts, dataloader):
         preds = caml_wrapper(input_embed, y_true, desc_data=None, get_attention=False)[0]
 
         # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(caml_wrapper, attributors, preds, input_embed, base_embed, y_true)
+        infids_sample, maxsens_sample, times_sample = evaluate_sample(caml_wrapper, attributor, preds, input_embed, base_embed, y_true)
 
         # Append results
-        for method in METHODS:
-            infids[method].extend(infids_sample[method])
-            maxsens[method].extend(maxsens_sample[method])
-            times[method].extend(times_sample[method])
-        break
+        infids.extend(infids_sample)
+        maxsens.extend(maxsens_sample)
+        times.extend(times_sample)
 
     remove_interpretable_embedding_layer(caml, int_emb)
     caml.train(mode=False)
 
-    # Compute mean infids, maxsens, times
-    mean_infids = {}
-    mean_maxsens = {}
-    mean_times = {}
-    for method in METHODS:
-        mean_infids[method] = mean(infids[method]) if len(infids[method]) > 0 else 0
-        # mean_maxsens[method] = mean(maxsens[method]) if len(maxsens[method]) > 0 else 0
-        mean_times[method] = mean(times[method]) if len(times[method]) > 0 else 0
+    # Compute mean infid, maxsen, time
+    mean_infid = mean(infids) if len(infids) > 0 else 0
+    mean_maxsen = mean(maxsens) if len(maxsens) > 0 else 0
+    mean_time = mean(times) if len(times) > 0 else 0
 
     print("Finished")
-    return mean_infids, mean_maxsens, mean_times
+    return mean_infid, mean_maxsen, mean_time
