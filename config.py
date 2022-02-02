@@ -38,3 +38,11 @@ CAML_ARGS = [
     "--test-model", "caml/predictions/CAML_mimic3_full/model.pth",
     "--gpu"
 ]
+
+METHODS = ['ixg', 'ig', 'shap']   # InputXGradient, Integrated Gradients, KernelSHAP
+SUBSET = 0.1    # Run experiments only on subset because of runtime
+THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
+N_STEPS = 50    # Number of steps for integral approximation for Integrated Gradients
+INT_BATCH = 10  # Internal batch size for Integrated Gradients
+N_SAMPLES = 50  # Number of samples for surrogate model training in KernelSHAP
+DEVIATION = 0.003   # Standard deviation for infidelity perturbation
