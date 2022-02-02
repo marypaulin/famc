@@ -15,7 +15,8 @@ import sys
 
 import config
 
-METHOD = sys.argv[1]
+MODEL = sys.argv[1]
+METHOD = sys.argv[2]
 SUBSET = config.SUBSET
 THRESHOLD = config.THRESHOLD
 N_STEPS = config.N_STEPS
@@ -80,29 +81,28 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
             # maxsens.append(maxsen.cpu().item())
     return infids, maxsens, times
 
-def evaluate_laat(laat, vocab, dataloader):
-    print("Evaluating LAAT")
-    # Define model wrapper to return only second icd level
-    def laat_wrapper(*args, **kwargs):
-        output, attn_weights = laat(*args, **kwargs)
-        return torch.sigmoid(output[1])
+def evaluate_model(model, dataloader):
+    print("Evaluating", MODEL)
+    # Define model wrapper and create interpretable embedding layer
+    if MODEL == 'laat':
+        def model_wrapper(*args, **kwargs):
+            output, attn_weights = model(*args, **kwargs)
+            return torch.sigmoid(output[1])
+        int_emb = configure_interpretable_embedding_layer(model, 'embedding')
+    elif MODEL == 'caml':
+        def model_wrapper(*args, **kwargs):
+            output, loss, alpha = model(*args, **kwargs)
+            return torch.sigmoid(output)
+        int_emb = configure_interpretable_embedding_layer(model, 'embed')
 
-    # Make sure model is in train mode and create attributors
-    laat.train()
+    # Make sure model is in train mode and create attributor
+    model.train()
     if METHOD == 'ixg':
-        attributor = InputXGradient(laat_wrapper)
+        attributor = InputXGradient(model_wrapper)
     elif METHOD == 'ig':
-        attributor = IntegratedGradients(laat_wrapper)
+        attributor = IntegratedGradients(model_wrapper)
     elif METHOD == 'shap':
-        attributor = KernelShap(laat_wrapper)
-
-    # Create token reference aka baseline value
-    # Note: Turns out to be zero
-    PAD_IND = vocab.index_of_word(vocab.PAD_TOKEN)
-    tok_ref_base = TokenReferenceBase(reference_token_idx=PAD_IND)
-
-    # Create interpretable embedding layer for attribution and evaluation
-    int_emb = configure_interpretable_embedding_layer(laat, 'embedding')
+        attributor = KernelShap(model_wrapper)
 
     # Load data in batches of size 1
     # Note: We can't use the advantages of batch processing for attribution
@@ -117,88 +117,36 @@ def evaluate_laat(laat, vocab, dataloader):
         print("Evaluating sample", idx)
 
         # Prepare input and baseline
-        input_indices, _, length, _ = tup
-        input_indices = input_indices.to(DEVICE)
-        input_embed = int_emb.indices_to_embeddings(input_indices).to(DEVICE)
-        base_indices = tok_ref_base.generate_reference(input_indices.size()[1], device=DEVICE).unsqueeze(0)
-        base_embed = int_emb.indices_to_embeddings(base_indices).to(DEVICE)
-
-        # Get prediction for input
-        preds = laat_wrapper(input_embed, length)[0]
-
-        # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(laat_wrapper, attributor, preds, input_embed, base_embed, length)
-
-        # Append results
-        infids.extend(infids_sample)
-        maxsens.extend(maxsens_sample)
-        times.extend(times_sample)
-
-    remove_interpretable_embedding_layer(laat, int_emb)
-    laat.train(mode=False)
-
-    # Compute mean infid, maxsen, time
-    mean_infid = mean(infids) if len(infids) > 0 else 0
-    mean_maxsen = mean(maxsens) if len(maxsens) > 0 else 0
-    mean_time = mean(times) if len(times) > 0 else 0
-
-    print("Finished")
-    return mean_infid, mean_maxsen, mean_time
-
-def evaluate_caml(caml, dicts, dataloader):
-    print("Evaluating CAML")
-    # Define model wrapper to return probabilities
-    def caml_wrapper(*args, **kwargs):
-        y_hat, loss, alpha = caml(*args, **kwargs)
-        return torch.sigmoid(y_hat)
-
-    # Make sure model is in train mode and create attributors
-    caml.train()
-    if METHOD == 'ixg':
-        attributor = InputXGradient(caml_wrapper)
-    elif METHOD == 'ig':
-        attributor = IntegratedGradients(caml_wrapper)
-    elif METHOD == 'shap':
-        attributor = KernelShap(caml_wrapper)
-
-    # Create interpretable embedding layer for attribution and evaluation
-    int_emb = configure_interpretable_embedding_layer(caml, 'embed')
-
-    # Load data in batches of size 1
-    infids = []
-    maxsens = []
-    times = []
-    for idx, tup in enumerate(dataloader):
-        # Evaluate only a subset of the dataset
-        if random.random() > SUBSET:
-            continue
-        print("Evaluating sample", idx)
-
-        # Prepare input and baseline
-        input_indices, y_true, _, _, _ = tup
-        input_indices = torch.LongTensor(input_indices).to(DEVICE)
-        y_true = torch.FloatTensor(y_true).to(DEVICE)
+        if MODEL == 'laat':
+            input_indices, _, afa, _ = tup
+            input_indices = input_indices.to(DEVICE)
+        elif MODEL == 'caml':
+            input_indices, afa, _, _, _ = tup
+            input_indices = torch.LongTensor(input_indices).to(DEVICE)
+            afa = torch.FloatTensor(afa).to(DEVICE)
         input_embed = int_emb.indices_to_embeddings(input_indices).to(DEVICE)
         base_embed = torch.zeros_like(input_embed).to(DEVICE)
 
-        # Get prediction for input
-        preds = caml_wrapper(input_embed, y_true, desc_data=None, get_attention=False)[0]
+        preds = model_wrapper(input_embed, afa)[0]
 
         # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(caml_wrapper, attributor, preds, input_embed, base_embed, y_true)
+        infids_sample, maxsens_sample, times_sample = evaluate_sample(model_wrapper,
+                                                        attributor,
+                                                        preds,
+                                                        input_embed,
+                                                        base_embed,
+                                                        afa)
 
-        # Append results
         infids.extend(infids_sample)
         maxsens.extend(maxsens_sample)
         times.extend(times_sample)
 
-    remove_interpretable_embedding_layer(caml, int_emb)
-    caml.train(mode=False)
+    remove_interpretable_embedding_layer(model, int_emb)
+    model.train(mode=False)
 
-    # Compute mean infid, maxsen, time
-    mean_infid = mean(infids) if len(infids) > 0 else 0
-    mean_maxsen = mean(maxsens) if len(maxsens) > 0 else 0
-    mean_time = mean(times) if len(times) > 0 else 0
+    mean_infid = round(mean(infids), 4) if len(infids) > 0 else 0
+    mean_maxsen = round(mean(maxsens), 4) if len(maxsens) > 0 else 0
+    mean_time = round(mean(times), 4) if len(times) > 0 else 0
 
     print("Finished")
     return mean_infid, mean_maxsen, mean_time

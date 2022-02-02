@@ -12,44 +12,36 @@ import loader
 import evaluator
 
 if __name__ == "__main__":
-    # Load config args
-    laat_args = config.LAAT_ARGS
-    caml_args = config.CAML_ARGS
-    method = sys.argv[1]
+    model = sys.argv[1]
+    method = sys.argv[2]
+
+    if model in config.MODELS:
+        print("Model:", model)
+    else:
+        print("No model named", model)
+        sys.exit()
+
     if method in config.METHODS:
         print("Attribution method:", method)
     else:
         print("No method named", method)
         sys.exit()
 
-    # Load mimic data for laat
-    laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new = loader.load_laat_data(laat_args)
+    if model == 'laat':
+        args = config.LAAT_ARGS
+        data, train_data, valid_data, test_data, vocab, args_new = loader.load_laat_data(args)
+        test_dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
+        laat = loader.load_laat(vocab, args_new)
+        # Compute mean_infid, mean_maxsen and attribution runtime on laat for ixg, ig and shap
+        # Note: mean_maxsen doesn't work yet due to oom issues
+        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(laat, test_dataloader)
+    elif model == 'caml':
+        args = config.CAML_ARGS
+        caml, args_new, dicts = loader.load_caml(args)
+        test_dataloader = loader.create_caml_dataloader(args_new, dicts)
+        # Compute mean_infid, mean_maxsen and attribution runtime on caml for ixg, ig and shap
+        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(caml, test_dataloader)
 
-    # Create dataloader for laat test set
-    laat_test_dataloader = loader.create_laat_dataloader(laat_test_data, laat_vocab, laat_args_new)
-
-    # Load laat model
-    laat = loader.load_laat(laat_vocab, laat_args_new)
-
-    # Compute infid, maxsen and attribution runtime on laat for ixg, ig and shap
-    # Note: maxsen doesn't work yet due to oom issues
-    laat_infid, laat_maxsen, laat_time = evaluator.evaluate_laat(laat, laat_vocab, laat_test_dataloader)
-
-    del laat_data, laat_train_data, laat_valid_data, laat_test_data, laat_vocab, laat_args_new, laat_test_dataloader, laat
-
-    # Load caml model
-    caml, caml_args_new, caml_dicts = loader.load_caml(caml_args)
-
-    # Load mimic data for caml
-    caml_test_dataloader = loader.create_caml_dataloader(caml_args_new, caml_dicts)
-
-    # Compute infid, maxsen and attribution runtime on caml for ixg, ig and shap
-    caml_infid, caml_maxsen, caml_time = evaluator.evaluate_caml(caml, caml_dicts, caml_test_dataloader)
-
-    infids = {'laat': laat_infid, 'caml': caml_infid}
-    with open(f'results/infids_{method}.txt', 'w') as file:
-        file.write(json.dumps(infids))
-
-    times = {'laat': laat_time, 'caml': caml_time}
-    with open(f'results/times_{method}.txt', 'w') as file:
-        file.write(json.dumps(times))
+    results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
+    with open(f'results/results_{model}_{method}.txt', 'w') as file:
+        file.write(json.dumps(results))

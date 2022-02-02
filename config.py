@@ -39,6 +39,7 @@ CAML_ARGS = [
     "--gpu"
 ]
 
+MODELS = ['laat', 'caml']
 METHODS = ['ixg', 'ig', 'shap']   # InputXGradient, Integrated Gradients, KernelSHAP
 SUBSET = 0.1    # Run experiments only on subset because of runtime
 THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
