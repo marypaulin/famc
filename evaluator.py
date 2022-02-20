@@ -11,14 +11,15 @@ import torch
 import numpy as np
 from statistics import mean
 import time
-import random
 import sys
 
 import config
 
 MODEL = sys.argv[1]
 METHOD = sys.argv[2]
-SUBSET = config.SUBSET
+N_TEST = config.N_TEST
+N_SUB = config.N_SUB
+SEED = config.SEED
 THRESHOLD = config.THRESHOLD
 N_STEPS = config.N_STEPS
 INT_BATCH = config.INT_BATCH
@@ -106,6 +107,12 @@ def evaluate_model(model, dataloader):
     elif METHOD == 'shap':
         attributor = KernelShap(model_wrapper)
 
+    # Choose random subset of test samples
+    # Note: Want to avoid converting dataloader to list for random subset
+    sub_bits = np.array([0] * (N_TEST-N_SUB) + [1] * (N_SUB))
+    np.random.seed(SEED)
+    np.random.shuffle(sub_bits)
+
     # Load data in batches of size 1
     # Note: We can't use the advantages of batch processing for attribution
     # because of the prediction threshold
@@ -114,7 +121,7 @@ def evaluate_model(model, dataloader):
     times = []
     for idx, tup in enumerate(dataloader):
         # Evaluate only a subset of the dataset
-        if random.random() > SUBSET:
+        if sub_bits[idx] == 0:
             continue
         print("Evaluating sample", idx)
 
