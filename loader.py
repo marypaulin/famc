@@ -90,7 +90,7 @@ def load_caml(args):
 def create_caml_dataloader(args, dicts):
     version = args.version
     data_path = args.data_path
-    filename = args.data_path.replace('train', 'dev')   # Using test data
+    filename = args.data_path.replace('train', 'test')   # Using test data
     n_labels = len(dicts['ind2c'])
     desc_embed = False  # Not using DR-CAML
     ind2w = dicts['ind2w']
