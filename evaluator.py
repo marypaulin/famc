@@ -6,6 +6,7 @@ from captum.attr import IntegratedGradients
 from captum.attr import KernelShap
 from captum.metrics import infidelity
 from captum.metrics import sensitivity_max
+from captum.metrics import infidelity_perturb_func_decorator
 import torch
 import numpy as np
 from statistics import mean
@@ -25,10 +26,11 @@ N_SAMPLES = config.N_SAMPLES
 DEVIATION = config.DEVIATION
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
+@infidelity_perturb_func_decorator(multipy_by_inputs=True)
 def perturb_function(input_embed, base_embed):
     # Noisy baseline function for infidelity metric
     noise = torch.tensor(np.random.normal(0, DEVIATION, base_embed.shape)).float().to(DEVICE)
-    return noise, input_embed - (base_embed + noise)
+    return input_embed - (base_embed + noise)
 
 def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, afa):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
@@ -42,7 +44,7 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
             if METHOD == 'ixg':
                 attrs = attributor.attribute(input_embed, \
                             additional_forward_args = afa, \
-                            target = target_idx)
+                            target = target_idx).float()
             elif METHOD == 'ig':
                 attrs = attributor.attribute(input_embed, \
                             base_embed, \
@@ -57,7 +59,7 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
                     attrs = attributor.attribute(input_embed, \
                                 target = target_idx, \
                                 n_samples = N_SAMPLES, \
-                                additional_forward_args = afa)
+                                additional_forward_args = afa).float()
                 afa = afa.squeeze(0)
             end = time.time()
             times.append(round(end - start, 4))
@@ -82,7 +84,7 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
     return infids, maxsens, times
 
 def evaluate_model(model, dataloader):
-    print("Evaluating", MODEL)
+    print(f"Evaluating {METHOD} on {MODEL}")
     # Define model wrapper and create interpretable embedding layer
     if MODEL == 'laat':
         def model_wrapper(*args, **kwargs):
