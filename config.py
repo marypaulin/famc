@@ -43,6 +43,7 @@ MODELS = ['laat', 'caml']
 METHODS = ['ixg', 'ig', 'shap']   # InputXGradient, Integrated Gradients, KernelSHAP
 N_TEST = 3372  # Total number of test samples, hard coded to save computation time
 N_SUB = 50    # Run experiments only on a subset of test samples like Yeh did
+
 SEED = 10   # Run experiments on same subset for all methods
 THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
 N_STEPS = 50    # Number of steps for integral approximation for Integrated Gradients
