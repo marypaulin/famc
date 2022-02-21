@@ -43,14 +43,15 @@ if __name__ == "__main__":
         # Compute mean_infid, mean_maxsen and attribution runtime on caml for ixg, ig and shap
         mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(caml, test_dataloader)
 
+    # Write results to file
     results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
     thresh = str(config.THRESHOLD).replace('.', '')
-    filename_base = f'results/{model}_{method}_thresh_{thresh}_seed_{config.SEED}'
+    filename = f'results/{model}_{method}_thresh_{thresh}_seed_{config.SEED}'
     if method == 'ixg':
-        filename = filename_base + '.txt'
+        filename = filename + '.txt'
     elif method == 'ig':
-        filename = filename_base + f'_nsteps_{config.N_STEPS}.txt'
+        filename = filename + f'_nsteps_{config.N_STEPS}.txt'
     elif method == 'shap':
-        filename = filename_base + f'_nsamples_{config.N_SAMPLES}.txt'
+        filename = filename + f'_nsamples_{config.N_SAMPLES}.txt'
     with open(filename, 'w') as file:
         file.write(json.dumps(results))

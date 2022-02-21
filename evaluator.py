@@ -65,7 +65,7 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
             end = time.time()
             times.append(round(end - start, 4))
 
-            # Compute infidelity and maxsens scores
+            # Compute infidelity and maxsen scores
             infid = infidelity(model_wrapper, \
                         perturb_function, \
                         input_embed, \
@@ -109,7 +109,7 @@ def evaluate_model(model, dataloader):
 
     # Choose random subset of test samples
     # Note: Want to avoid converting dataloader to list for random subset
-    sub_bits = np.array([0] * (N_TEST-N_SUB) + [1] * (N_SUB))
+    sub_bits = np.array([0] * (N_TEST - N_SUB) + [1] * (N_SUB))
     np.random.seed(SEED)
     np.random.shuffle(sub_bits)
 
