@@ -3,9 +3,7 @@
 # using infidelity, (max_sensitivity), and runtime
 # Note: max_sensitivity doesn't work yet due to oom issues
 
-import json
 import sys
-import os
 
 import config
 import loader

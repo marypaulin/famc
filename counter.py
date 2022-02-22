@@ -1,4 +1,7 @@
 # Utilities for data statistics
+# Count numbers of samples,
+# numbers of tokens per sample,
+# and numbers of labels per sample
 import numpy as np
 import torch
 

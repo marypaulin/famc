@@ -28,6 +28,7 @@ def load_laat(vocab, args):
     return model
 
 def load_caml(args):
+    # Copied from caml/learn/training.py
     parser = argparse.ArgumentParser(description="load caml model")
     parser.add_argument("data_path", type=str,
                             help="path to a file containing sorted train data. dev/test splits assumed to have same name format with 'train' replaced by 'dev' and 'test'")
