@@ -19,9 +19,7 @@ N_TEST = config.N_TEST
 N_SUB = config.N_SUB
 SEED = config.SEED
 THRESHOLD = config.THRESHOLD
-N_STEPS = config.N_STEPS
 INT_BATCH = config.INT_BATCH
-N_SAMPLES = config.N_SAMPLES
 DEVIATION = config.DEVIATION
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -31,7 +29,15 @@ def perturb_function(input_embed, base_embed):
     noise = torch.tensor(np.random.normal(0, DEVIATION, base_embed.shape)).float().to(DEVICE)
     return input_embed - (base_embed + noise)
 
-def evaluate_sample(model_wrapper, method_name, attributor, preds, input_embed, base_embed, afa):
+def evaluate_sample(model_wrapper,
+                    method_name,
+                    attributor,
+                    preds,
+                    input_embed,
+                    base_embed,
+                    afa,
+                    n_steps,
+                    n_samples):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
     infids = []
     maxsens = []
@@ -50,14 +56,14 @@ def evaluate_sample(model_wrapper, method_name, attributor, preds, input_embed, 
                             internal_batch_size = INT_BATCH, \
                             additional_forward_args = afa, \
                             target = target_idx, \
-                            n_steps = N_STEPS).float()
+                            n_steps = n_steps).float()
             elif method_name == 'shap':
                 # For some reason, KernelShap needs afa in different shape
                 afa = afa.unsqueeze(0)
                 with torch.no_grad():
                     attrs = attributor.attribute(input_embed, \
                                 target = target_idx, \
-                                n_samples = N_SAMPLES, \
+                                n_samples = n_samples, \
                                 additional_forward_args = afa).float()
                 afa = afa.squeeze(0)
             end = time.time()
@@ -82,7 +88,7 @@ def evaluate_sample(model_wrapper, method_name, attributor, preds, input_embed, 
             # maxsens.append(maxsen.cpu().item())
     return infids, maxsens, times
 
-def evaluate_model(model_name, model, method_name, dataloader):
+def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_samples):
     print(f"Evaluating {method_name} on {model_name}")
     # Define model wrapper and create interpretable embedding layer
     if model_name == 'laat':
@@ -142,7 +148,9 @@ def evaluate_model(model_name, model, method_name, dataloader):
                                                         preds, \
                                                         input_embed, \
                                                         base_embed, \
-                                                        afa)
+                                                        afa, \
+                                                        n_steps, \
+                                                        n_samples)
 
         infids.extend(infids_sample)
         maxsens.extend(maxsens_sample)
@@ -158,14 +166,14 @@ def evaluate_model(model_name, model, method_name, dataloader):
     print("Finished")
     return results
 
-def save_results_to_file(model_name, method_name, results):
+def save_results_to_file(model_name, method_name, results, n_steps, n_samples):
     thresh = str(THRESHOLD).replace('.', '')
     filename = f'results/{model_name}_{method_name}_thresh_{thresh}_seed_{SEED}'
     if method_name == 'ixg':
         filename = filename + '.txt'
     elif method_name == 'ig':
-        filename = filename + f'_nsteps_{N_STEPS}.txt'
+        filename = filename + f'_nsteps_{n_steps}.txt'
     elif method_name == 'shap':
-        filename = filename + f'_nsamples_{N_SAMPLES}.txt'
+        filename = filename + f'_nsamples_{n_samples}.txt'
     with open(filename, 'w') as file:
         file.write(json.dumps(results))
