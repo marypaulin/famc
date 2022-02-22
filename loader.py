@@ -7,8 +7,8 @@ import torch
 import argparse
 
 def load_laat_data(args):
-    data, train_data, valid_data, test_data, vocab, args_new, logger, cached_file_name = laattraining.prepare_data(args)
-    return data, train_data, valid_data, test_data, vocab, args_new
+    _, _, _, test_data, vocab, args_new, _, _ = laattraining.prepare_data(args)
+    return test_data, vocab, args_new
 
 def create_laat_dataloader(data, vocab, args):
     dataset = dataloaders.TextDataset(data, vocab,

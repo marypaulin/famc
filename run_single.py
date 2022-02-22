@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     if model_name == 'laat':
         args = config.LAAT_ARGS
-        data, train_data, valid_data, test_data, vocab, args_new = loader.load_laat_data(args)
+        test_data, vocab, args_new = loader.load_laat_data(args)
         test_dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
         laat = loader.load_laat(vocab, args_new)
         # Compute mean_infid, (mean_maxsen), and runtime on laat for specified method
