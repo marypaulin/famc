@@ -32,7 +32,7 @@ def count_sub(dataloader):
     n_subtokens = []
     n_sublabels = []
     for idx, tup in enumerate(dataloader):
-        # Evaluate only a subset of the dataset
+        # Count only a subset of the dataset
         if sub_bits[idx] == 0:
             continue
         input_indices, labels, afa, _ = tup
