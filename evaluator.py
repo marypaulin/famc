@@ -11,7 +11,7 @@ import torch
 import numpy as np
 from statistics import mean
 import time
-import sys
+import json
 
 import config
 
@@ -154,6 +154,18 @@ def evaluate_model(model_name, model, method_name, dataloader):
     mean_infid = round(mean(infids), 4) if len(infids) > 0 else 0
     mean_maxsen = round(mean(maxsens), 4) if len(maxsens) > 0 else 0
     mean_time = round(mean(times), 4) if len(times) > 0 else 0
-
+    results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
     print("Finished")
-    return mean_infid, mean_maxsen, mean_time
+    return results
+
+def save_results_to_file(model_name, method_name, results):
+    thresh = str(THRESHOLD).replace('.', '')
+    filename = f'results/{model_name}_{method_name}_thresh_{thresh}_seed_{SEED}'
+    if method_name == 'ixg':
+        filename = filename + '.txt'
+    elif method_name == 'ig':
+        filename = filename + f'_nsteps_{N_STEPS}.txt'
+    elif method_name == 'shap':
+        filename = filename + f'_nsamples_{N_SAMPLES}.txt'
+    with open(filename, 'w') as file:
+        file.write(json.dumps(results))

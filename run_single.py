@@ -33,23 +33,12 @@ if __name__ == "__main__":
         test_dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
         laat = loader.load_laat(vocab, args_new)
         # Compute mean_infid, (mean_maxsen), and runtime on laat for specified method
-        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(model_name, laat, method_name, test_dataloader)
+        results = evaluator.evaluate_model(model_name, laat, method_name, test_dataloader)
     elif model_name == 'caml':
         args = config.CAML_ARGS
         caml, args_new, dicts = loader.load_caml(args)
         test_dataloader = loader.create_caml_dataloader(args_new, dicts)
         # Compute mean_infid, (mean_maxsen), and runtime on caml for specified method
-        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(model_name, caml, method_name, test_dataloader)
+        results = evaluator.evaluate_model(model_name, caml, method_name, test_dataloader)
 
-    # Write results to file
-    results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
-    thresh = str(config.THRESHOLD).replace('.', '')
-    filename = f'results/{model_name}_{method_name}_thresh_{thresh}_seed_{config.SEED}'
-    if method_name == 'ixg':
-        filename = filename + '.txt'
-    elif method_name == 'ig':
-        filename = filename + f'_nsteps_{config.N_STEPS}.txt'
-    elif method_name == 'shap':
-        filename = filename + f'_nsamples_{config.N_SAMPLES}.txt'
-    with open(filename, 'w') as file:
-        file.write(json.dumps(results))
+    evaluator.save_results_to_file(model_name, method_name, results)
