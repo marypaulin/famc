@@ -1,8 +1,7 @@
-# Calculate feature attributions, infidelity, and max_sensitivity
-# for all texts, for all labels, for both models, for all methods
-# Analyse running time
-# Models: LAAT, CAML
-# Methods: GxI, IG, SHAP
+# Evaluate feature attributions
+# for single model and method specified via command line
+# using infidelity, (max_sensitivity), and runtime
+# Note: max_sensitivity doesn't work yet due to oom issues
 
 import json
 import sys
@@ -13,45 +12,44 @@ import loader
 import evaluator
 
 if __name__ == "__main__":
-    model = sys.argv[1]
-    method = sys.argv[2]
+    model_name = sys.argv[1]
+    method_name = sys.argv[2]
 
-    if model in config.MODELS:
-        print("Model:", model)
+    if model_name in config.MODELS:
+        print("Model:", model_name)
     else:
-        print("No model named", model)
+        print("No model named", model_name)
         sys.exit()
 
-    if method in config.METHODS:
-        print("Attribution method:", method)
+    if method_name in config.METHODS:
+        print("Attribution method:", method_name)
     else:
-        print("No method named", method)
+        print("No method named", method_name)
         sys.exit()
 
-    if model == 'laat':
+    if model_name == 'laat':
         args = config.LAAT_ARGS
         data, train_data, valid_data, test_data, vocab, args_new = loader.load_laat_data(args)
         test_dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
         laat = loader.load_laat(vocab, args_new)
-        # Compute mean_infid, mean_maxsen and attribution runtime on laat for ixg, ig and shap
-        # Note: mean_maxsen doesn't work yet due to oom issues
-        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(laat, test_dataloader)
-    elif model == 'caml':
+        # Compute mean_infid, (mean_maxsen), and runtime on laat for specified method
+        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(model_name, laat, method_name, test_dataloader)
+    elif model_name == 'caml':
         args = config.CAML_ARGS
         caml, args_new, dicts = loader.load_caml(args)
         test_dataloader = loader.create_caml_dataloader(args_new, dicts)
-        # Compute mean_infid, mean_maxsen and attribution runtime on caml for ixg, ig and shap
-        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(caml, test_dataloader)
+        # Compute mean_infid, (mean_maxsen), and runtime on caml for specified method
+        mean_infid, mean_maxsen, mean_time = evaluator.evaluate_model(model_name, caml, method_name, test_dataloader)
 
     # Write results to file
     results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
     thresh = str(config.THRESHOLD).replace('.', '')
-    filename = f'results/{model}_{method}_thresh_{thresh}_seed_{config.SEED}'
-    if method == 'ixg':
+    filename = f'results/{model_name}_{method_name}_thresh_{thresh}_seed_{config.SEED}'
+    if method_name == 'ixg':
         filename = filename + '.txt'
-    elif method == 'ig':
+    elif method_name == 'ig':
         filename = filename + f'_nsteps_{config.N_STEPS}.txt'
-    elif method == 'shap':
+    elif method_name == 'shap':
         filename = filename + f'_nsamples_{config.N_SAMPLES}.txt'
     with open(filename, 'w') as file:
         file.write(json.dumps(results))

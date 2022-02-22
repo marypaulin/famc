@@ -15,8 +15,6 @@ import sys
 
 import config
 
-MODEL = sys.argv[1]
-METHOD = sys.argv[2]
 N_TEST = config.N_TEST
 N_SUB = config.N_SUB
 SEED = config.SEED
@@ -33,7 +31,7 @@ def perturb_function(input_embed, base_embed):
     noise = torch.tensor(np.random.normal(0, DEVIATION, base_embed.shape)).float().to(DEVICE)
     return input_embed - (base_embed + noise)
 
-def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, afa):
+def evaluate_sample(model_wrapper, method_name, attributor, preds, input_embed, base_embed, afa):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
     infids = []
     maxsens = []
@@ -42,18 +40,18 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
         if pred.item() > THRESHOLD:
             # Compute attributions
             start = time.time()
-            if METHOD == 'ixg':
+            if method_name == 'ixg':
                 attrs = attributor.attribute(input_embed, \
                             additional_forward_args = afa, \
                             target = target_idx).float()
-            elif METHOD == 'ig':
+            elif method_name == 'ig':
                 attrs = attributor.attribute(input_embed, \
                             base_embed, \
                             internal_batch_size = INT_BATCH, \
                             additional_forward_args = afa, \
                             target = target_idx, \
                             n_steps = N_STEPS).float()
-            elif METHOD == 'shap':
+            elif method_name == 'shap':
                 # For some reason, KernelShap needs afa in different shape
                 afa = afa.unsqueeze(0)
                 with torch.no_grad():
@@ -84,15 +82,15 @@ def evaluate_sample(model_wrapper, attributor, preds, input_embed, base_embed, a
             # maxsens.append(maxsen.cpu().item())
     return infids, maxsens, times
 
-def evaluate_model(model, dataloader):
-    print(f"Evaluating {METHOD} on {MODEL}")
+def evaluate_model(model_name, model, method_name, dataloader):
+    print(f"Evaluating {method_name} on {model_name}")
     # Define model wrapper and create interpretable embedding layer
-    if MODEL == 'laat':
+    if model_name == 'laat':
         def model_wrapper(*args, **kwargs):
             output, attn_weights = model(*args, **kwargs)
             return torch.sigmoid(output[1])
         int_emb = configure_interpretable_embedding_layer(model, 'embedding')
-    elif MODEL == 'caml':
+    elif model_name == 'caml':
         def model_wrapper(*args, **kwargs):
             output, loss, alpha = model(*args, **kwargs)
             return torch.sigmoid(output)
@@ -100,11 +98,11 @@ def evaluate_model(model, dataloader):
 
     # Make sure model is in train mode and create attributor
     model.train()
-    if METHOD == 'ixg':
+    if method_name == 'ixg':
         attributor = InputXGradient(model_wrapper)
-    elif METHOD == 'ig':
+    elif method_name == 'ig':
         attributor = IntegratedGradients(model_wrapper)
-    elif METHOD == 'shap':
+    elif method_name == 'shap':
         attributor = KernelShap(model_wrapper)
 
     # Choose random subset of test samples
@@ -125,10 +123,10 @@ def evaluate_model(model, dataloader):
         print("Evaluating sample", idx)
 
         # Prepare input and baseline
-        if MODEL == 'laat':
+        if model_name == 'laat':
             input_indices, _, afa, _ = tup
             input_indices = input_indices.to(DEVICE)
-        elif MODEL == 'caml':
+        elif model_name == 'caml':
             input_indices, afa, _, _, _ = tup
             input_indices = torch.LongTensor(input_indices).to(DEVICE)
             afa = torch.FloatTensor(afa).to(DEVICE)
@@ -138,11 +136,12 @@ def evaluate_model(model, dataloader):
         preds = model_wrapper(input_embed, afa)[0]
 
         # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(model_wrapper,
-                                                        attributor,
-                                                        preds,
-                                                        input_embed,
-                                                        base_embed,
+        infids_sample, maxsens_sample, times_sample = evaluate_sample(model_wrapper, \
+                                                        method_name, \
+                                                        attributor, \
+                                                        preds, \
+                                                        input_embed, \
+                                                        base_embed, \
                                                         afa)
 
         infids.extend(infids_sample)
