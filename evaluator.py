@@ -108,7 +108,6 @@ def evaluate_model(model, dataloader):
         attributor = KernelShap(model_wrapper)
 
     # Choose random subset of test samples
-    # Note: Want to avoid converting dataloader to list for random subset
     sub_bits = np.array([0] * (N_TEST - N_SUB) + [1] * (N_SUB))
     np.random.seed(SEED)
     np.random.shuffle(sub_bits)
