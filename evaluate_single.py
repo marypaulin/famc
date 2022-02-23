@@ -3,10 +3,10 @@
 # using infidelity, (max_sensitivity), and runtime
 # Note: max_sensitivity doesn't work yet due to oom issues
 
-# Usage: python3 run_single.py <model_name> <method_name> [<n_steps>/<n_samples>]
-# Example: python3 run_single.py caml ixg
-# Example: python3 run_single.py laat ig 50
-# Example: python3 run_single.py laat shap 100
+# Usage: python3 evaluate_single.py <model_name> <method_name> [<n_steps>/<n_samples>]
+# Example: python3 evaluate_single.py caml ixg
+# Example: python3 evaluate_single.py laat ig 50
+# Example: python3 evaluate_single.py laat shap 100
 
 import sys
 

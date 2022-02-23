@@ -3,6 +3,8 @@
 # using infidelity, (max_sensitivity), and runtime
 # Note: max_sensitivity doesn't work yet due to oom issues
 
+# Usage: python3 evaluate_all.py
+
 import config
 import loader
 import evaluator
