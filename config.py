@@ -46,7 +46,7 @@ N_SUB = 50    # Run experiments only on a subset of test samples like Yeh did
 
 SEED = 10   # Run experiments on same subset for all methods
 THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
-N_STEPS = 50    # Number of steps for integral approximation for Integrated Gradients
+N_STEPS = [10, 50, 100, 200]    # Number of steps for integral approximation for Integrated Gradients
 INT_BATCH = 5  # Internal batch size for Integrated Gradients
-N_SAMPLES = 50  # Number of samples for surrogate model training in KernelSHAP
+N_SAMPLES = [10, 50, 100]  # Number of samples for surrogate model training in KernelSHAP
 DEVIATION = 1.0   # Standard deviation for infidelity perturbation as in Yeh paper
