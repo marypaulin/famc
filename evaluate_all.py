@@ -26,12 +26,12 @@ if __name__ == "__main__":
     method_name = 'ig'
     for n_steps in config.N_STEPS:
         results_ig = evaluator.evaluate_model(model_name, model, method_name, dataloader, n_steps, None)
-        evaluator.save_results_to_file(model_name, method_name, results_ixg, n_steps, None)
+        evaluator.save_results_to_file(model_name, method_name, results_ig, n_steps, None)
     # Evaluate shap
     method_name = 'shap'
     for n_samples in config.N_SAMPLES:
         results_shap = evaluator.evaluate_model(model_name, model, method_name, dataloader, None, n_samples)
-        evaluator.save_results_to_file(model_name, method_name, results_ixg, None, n_samples)
+        evaluator.save_results_to_file(model_name, method_name, results_shap, None, n_samples)
 
     # Evaluate laat
     model_name = 'laat'
