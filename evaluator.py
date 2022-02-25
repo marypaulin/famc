@@ -1,4 +1,3 @@
-from captum.attr import TokenReferenceBase
 from captum.attr import configure_interpretable_embedding_layer
 from captum.attr import remove_interpretable_embedding_layer
 from captum.attr import InputXGradient
@@ -17,8 +16,11 @@ import config
 
 N_TEST = config.N_TEST
 N_SUB = config.N_SUB
+
 SEED = config.SEED
 THRESHOLD = config.THRESHOLD
+LB = config.LB
+UB = config.UB
 INT_BATCH = config.INT_BATCH
 DEVIATION = config.DEVIATION
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -66,6 +68,8 @@ def evaluate_sample(model_wrapper,
                                 n_samples = n_samples, \
                                 additional_forward_args = afa).float()
                 afa = afa.squeeze(0)
+            elif method_name == 'rb':
+                attrs = (UB - LB) * torch.rand_like(input_embed).float() + LB
             end = time.time()
             times.append(round(end - start, 4))
 
@@ -110,6 +114,8 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
         attributor = IntegratedGradients(model_wrapper)
     elif method_name == 'shap':
         attributor = KernelShap(model_wrapper)
+    elif method_name == 'rb':
+        attributor = None
 
     # Choose random subset of test samples
     sub_bits = np.array([0] * (N_TEST - N_SUB) + [1] * (N_SUB))
@@ -175,5 +181,7 @@ def save_results_to_file(model_name, method_name, results, n_steps, n_samples):
         filename = filename + f'_nsteps_{n_steps}.txt'
     elif method_name == 'shap':
         filename = filename + f'_nsamples_{n_samples}.txt'
+    elif method_name == 'rb':
+        filename = filename + '.txt'
     with open(filename, 'w') as file:
         file.write(json.dumps(results))
