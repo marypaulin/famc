@@ -18,6 +18,10 @@ if __name__ == "__main__":
     dataloader = loader.create_caml_dataloader(args_new, dicts)
     # Convert caml dataloader to list because generator can't be iterated twice
     dataloader = list(dataloader)
+    # Evaluate rb
+    method_name = 'ra'
+    results_rb = evaluator.evaluate_model(model_name, model, method_name, dataloader, None, None)
+    evaluator.save_results_to_file(model_name, method_name, results_rb, None, None)
     # Evaluate ixg
     method_name = 'ixg'
     results_ixg = evaluator.evaluate_model(model_name, model, method_name, dataloader, None, None)
@@ -39,6 +43,10 @@ if __name__ == "__main__":
     test_data, vocab, args_new = loader.load_laat_data(args)
     dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
     model = loader.load_laat(vocab, args_new)
+    # Evaluate rb
+    method_name = 'ra'
+    results_rb = evaluator.evaluate_model(model_name, model, method_name, dataloader, None, None)
+    evaluator.save_results_to_file(model_name, method_name, results_rb, None, None)
     # Evaluate ixg
     method_name = 'ixg'
     results_ixg = evaluator.evaluate_model(model_name, model, method_name, dataloader, None, None)

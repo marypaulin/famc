@@ -40,15 +40,15 @@ CAML_ARGS = [
 ]
 
 MODELS = ['laat', 'caml']
-METHODS = ['ixg', 'ig', 'shap', 'rb']   # InputXGradient, Integrated Gradients, KernelSHAP, Random Baseline
+METHODS = ['ra', 'ixg', 'ig', 'shap']   # Random Attributions, InputXGradient, Integrated Gradients, KernelSHAP
+PERTS = ['b', 'nb', 'ni']   # Perturbation functions for infidelity: Baseline, NoisyBaseline, NoisyInput
 N_TEST = 3372  # Total number of test samples, hard coded to save computation time
 N_SUB = 50    # Run experiments only on a subset of test samples like Yeh did
 
 SEED = 10   # Run experiments on same subset for all methods
 THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
-LB = -0.1   # Lower bound for random baseline (see attributions.ipynb)
-UB = 0.1    # Upper bound for random baseline
+LB = -0.1   # Lower bound for random attribution (see attributions.ipynb)
+UB = 0.1    # Upper bound for random attribution
 N_STEPS = [10, 50, 100, 200]    # Number of steps for integral approximation for Integrated Gradients
 INT_BATCH = 5  # Internal batch size for Integrated Gradients
 N_SAMPLES = [10, 50, 100]  # Number of samples for surrogate model training in KernelSHAP
-DEVIATION = 1.0   # Standard deviation for infidelity perturbation as in Yeh paper

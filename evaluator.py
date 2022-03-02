@@ -14,6 +14,7 @@ import json
 
 import config
 
+PERTS = config.PERTS
 N_TEST = config.N_TEST
 N_SUB = config.N_SUB
 
@@ -22,14 +23,36 @@ THRESHOLD = config.THRESHOLD
 LB = config.LB
 UB = config.UB
 INT_BATCH = config.INT_BATCH
-DEVIATION = config.DEVIATION
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 @infidelity_perturb_func_decorator(multipy_by_inputs=True)
-def perturb_function(input_embed, base_embed):
-    # Noisy baseline function for infidelity metric
-    noise = torch.tensor(np.random.normal(0, DEVIATION, base_embed.shape)).float().to(DEVICE)
-    return input_embed - (base_embed + noise)
+def perturb_func_baseline(input_embed, base_embed):
+    # Baseline perturbation to measure completeness
+    n_perturb_samples = input_embed.size()[0]
+    base_embed_expanded = base_embed.repeat(n_perturb_samples, 1, 1)
+    return base_embed_expanded
+
+@infidelity_perturb_func_decorator(multipy_by_inputs=True)
+def perturb_func_noisybaseline(input_embed, base_embed):
+    # Noisy baseline perturbation from Yeh paper
+    SD = 0.2
+    n_perturb_samples = input_embed.size()[0]
+    base_embed_expanded = base_embed.repeat(n_perturb_samples, 1, 1)
+    noise = torch.tensor(np.random.normal(0, SD, base_embed_expanded.shape)).float().to(DEVICE)
+    return base_embed_expanded - noise
+
+@infidelity_perturb_func_decorator(multipy_by_inputs=True)
+def perturb_func_noisyinput(input_embed, base_embed):
+    # Noisy input perturbation from Captum Docs
+    SD = 0.003
+    noise = torch.tensor(np.random.normal(0, SD, input_embed.shape)).float().to(DEVICE)
+    return input_embed - noise
+
+perturb_funcs = {
+    'b': perturb_func_baseline,
+    'nb': perturb_func_noisybaseline,
+    'ni': perturb_func_noisyinput
+}
 
 def evaluate_sample(model_wrapper,
                     method_name,
@@ -41,14 +64,16 @@ def evaluate_sample(model_wrapper,
                     n_steps,
                     n_samples):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
-    infids = []
+    infids = {pert: [] for pert in PERTS}
     maxsens = []
     times = []
     for target_idx, pred in enumerate(preds):
         if pred.item() > THRESHOLD:
             # Compute attributions
             start = time.time()
-            if method_name == 'ixg':
+            if method_name == 'ra':
+                attrs = (UB - LB) * torch.rand_like(input_embed).float() + LB
+            elif method_name == 'ixg':
                 attrs = attributor.attribute(input_embed, \
                             additional_forward_args = afa, \
                             target = target_idx).float()
@@ -68,28 +93,30 @@ def evaluate_sample(model_wrapper,
                                 n_samples = n_samples, \
                                 additional_forward_args = afa).float()
                 afa = afa.squeeze(0)
-            elif method_name == 'rb':
-                attrs = (UB - LB) * torch.rand_like(input_embed).float() + LB
             end = time.time()
             times.append(round(end - start, 4))
 
-            # Compute infidelity and maxsen scores
-            infid = infidelity(model_wrapper, \
-                        perturb_function, \
-                        input_embed, \
-                        base_embed, \
-                        attrs, \
-                        target = target_idx, \
-                        additional_forward_args = afa)
+            # Compute infidelity scores for all perturbation functions
+            for pert in PERTS:
+                infid = infidelity(model_wrapper, \
+                            perturb_funcs[pert], \
+                            input_embed, \
+                            base_embed, \
+                            attrs, \
+                            target = target_idx, \
+                            additional_forward_args = afa, \
+                            n_perturb_samples = 10, \
+                            normalize = True)
+                infids[pert].append(infid.cpu().item())
+            # Compute maxsen scores
             # maxsen = sensitivity_max(attributor.attribute, \
             #                             input_embed, \
             #                             n_perturb_samples = 1, \
             #                             baselines = base_embed, \
             #                             target = target_idx, \
             #                             additional_forward_args = afa)
-
-            infids.append(infid.cpu().item())
             # maxsens.append(maxsen.cpu().item())
+            break
     return infids, maxsens, times
 
 def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_samples):
@@ -108,14 +135,14 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
 
     # Make sure model is in train mode and create attributor
     model.train()
-    if method_name == 'ixg':
+    if method_name == 'ra':
+        attributor = None
+    elif method_name == 'ixg':
         attributor = InputXGradient(model_wrapper)
     elif method_name == 'ig':
         attributor = IntegratedGradients(model_wrapper)
     elif method_name == 'shap':
         attributor = KernelShap(model_wrapper)
-    elif method_name == 'rb':
-        attributor = None
 
     # Choose random subset of test samples
     sub_bits = np.array([0] * (N_TEST - N_SUB) + [1] * (N_SUB))
@@ -125,7 +152,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
     # Load data in batches of size 1
     # Note: We can't use the advantages of batch processing for attribution
     # because of the prediction threshold
-    infids = []
+    infids = {pert: [] for pert in PERTS}
     maxsens = []
     times = []
     for idx, tup in enumerate(dataloader):
@@ -158,30 +185,33 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
                                                         n_steps, \
                                                         n_samples)
 
-        infids.extend(infids_sample)
+        for pert in PERTS:
+            infids[pert].extend(infids_sample[pert])
         maxsens.extend(maxsens_sample)
         times.extend(times_sample)
+        break
 
     remove_interpretable_embedding_layer(model, int_emb)
     model.train(mode=False)
 
-    mean_infid = round(mean(infids), 4) if len(infids) > 0 else 0
+    results = {}
+    for pert in PERTS:
+        mean_infid = round(mean(infids[pert]), 4) if len(infids) > 0 else 0
+        results[f'infid_{pert}'] = mean_infid
     mean_maxsen = round(mean(maxsens), 4) if len(maxsens) > 0 else 0
+    results['max_sen'] = mean_maxsen
     mean_time = round(mean(times), 4) if len(times) > 0 else 0
-    results = {'mean_infid': mean_infid, 'mean_maxsen': mean_maxsen, 'mean_time': mean_time}
+    results['time'] = mean_time
     print("Finished")
     return results
 
 def save_results_to_file(model_name, method_name, results, n_steps, n_samples):
-    thresh = str(THRESHOLD).replace('.', '')
-    filename = f'results/{model_name}_{method_name}_thresh_{thresh}_seed_{SEED}'
-    if method_name == 'ixg':
-        filename = filename + '.txt'
+    basename = f'results/{model_name}_{method_name}'
+    if method_name == 'ixg' or method_name == 'ra':
+        filename = basename + '.txt'
     elif method_name == 'ig':
-        filename = filename + f'_nsteps_{n_steps}.txt'
+        filename = basename + f'_nsteps{n_steps}.txt'
     elif method_name == 'shap':
-        filename = filename + f'_nsamples_{n_samples}.txt'
-    elif method_name == 'rb':
-        filename = filename + '.txt'
+        filename = basename + f'_nsamples{n_samples}.txt'
     with open(filename, 'w') as file:
         file.write(json.dumps(results))
