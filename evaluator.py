@@ -15,7 +15,6 @@ import json
 
 import config
 
-PERTS = config.PERTS
 N_TEST = config.N_TEST
 N_SUB = config.N_SUB
 
@@ -27,13 +26,6 @@ INT_BATCH = config.INT_BATCH
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 @infidelity_perturb_func_decorator(multipy_by_inputs=True)
-def perturb_func_baseline(input_embed, base_embed):
-    # Baseline perturbation to measure completeness
-    n_perturb_samples = input_embed.size()[0]
-    base_embed_expanded = base_embed.repeat(n_perturb_samples, 1, 1)
-    return base_embed_expanded
-
-@infidelity_perturb_func_decorator(multipy_by_inputs=True)
 def perturb_func_noisybaseline(input_embed, base_embed):
     # Noisy baseline perturbation from Yeh paper
     SD = 0.2
@@ -41,19 +33,6 @@ def perturb_func_noisybaseline(input_embed, base_embed):
     base_embed_expanded = base_embed.repeat(n_perturb_samples, 1, 1)
     noise = torch.tensor(np.random.normal(0, SD, base_embed_expanded.shape)).float().to(DEVICE)
     return base_embed_expanded - noise
-
-@infidelity_perturb_func_decorator(multipy_by_inputs=True)
-def perturb_func_noisyinput(input_embed, base_embed):
-    # Noisy input perturbation from Captum Docs
-    SD = 0.003
-    noise = torch.tensor(np.random.normal(0, SD, input_embed.shape)).float().to(DEVICE)
-    return input_embed - noise
-
-perturb_funcs = {
-    'b': perturb_func_baseline,
-    'nb': perturb_func_noisybaseline,
-    'ni': perturb_func_noisyinput
-}
 
 def evaluate_sample(model_wrapper,
                     method_name,
@@ -65,7 +44,7 @@ def evaluate_sample(model_wrapper,
                     n_steps,
                     n_samples):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
-    infids = {pert: [] for pert in PERTS}
+    infids = []
     # maxsens = []
     times = []
     for target_idx, pred in enumerate(preds):
@@ -97,19 +76,18 @@ def evaluate_sample(model_wrapper,
             end = time.time()
             times.append(round(end - start, 4))
 
-            # Compute infidelity scores for all perturbation functions
-            for pert in PERTS:
-                infid = infidelity(model_wrapper, \
-                            perturb_funcs[pert], \
-                            input_embed, \
-                            base_embed, \
-                            attrs, \
-                            target = target_idx, \
-                            additional_forward_args = afa, \
-                            n_perturb_samples = 10, \
-                            normalize = True)
-                infids[pert].append(infid.cpu().item())
-            # Compute maxsen scores
+            # Compute infidelity
+            infid = infidelity(model_wrapper, \
+                        perturb_func_noisybaseline, \
+                        input_embed, \
+                        base_embed, \
+                        attrs, \
+                        target = target_idx, \
+                        additional_forward_args = afa, \
+                        n_perturb_samples = 10, \
+                        normalize = True)
+            infids.append(infid.cpu().item())
+            # Compute maxsen
             # Does not work bc of oom issues
             # maxsen = sensitivity_max(attributor.attribute, \
             #                             input_embed, \
@@ -155,7 +133,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
     # Load data in batches of size 1
     # Note: We can't use the advantages of batch processing for attribution
     # because of the prediction threshold
-    infids = {pert: [] for pert in PERTS}
+    infids = []
     # maxsens = []
     times = []
     for idx, tup in enumerate(dataloader):
@@ -189,8 +167,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
                                                         n_steps, \
                                                         n_samples)
 
-        for pert in PERTS:
-            infids[pert].extend(infids_sample[pert])
+        infids.extend(infids_sample)
         # maxsens.extend(maxsens_sample)
         times.extend(times_sample)
         break
@@ -199,8 +176,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
     model.train(mode=False)
 
     results = {}
-    for pert in PERTS:
-        results[f'infid_{pert}'] = infids[pert]
+    results['infid'] = infids
     # results['max_sen'] = maxsens
     results['time'] = times
     print("Finished")
