@@ -8,6 +8,7 @@ from captum.metrics import sensitivity_max
 from captum.metrics import infidelity_perturb_func_decorator
 import torch
 import numpy as np
+import pandas as pd
 from statistics import mean
 import time
 import json
@@ -65,7 +66,7 @@ def evaluate_sample(model_wrapper,
                     n_samples):
     # Attribute and evaluate one sample for all labels with pred > THRESHOLD
     infids = {pert: [] for pert in PERTS}
-    maxsens = []
+    # maxsens = []
     times = []
     for target_idx, pred in enumerate(preds):
         if pred.item() > THRESHOLD:
@@ -109,6 +110,7 @@ def evaluate_sample(model_wrapper,
                             normalize = True)
                 infids[pert].append(infid.cpu().item())
             # Compute maxsen scores
+            # Does not work bc of oom issues
             # maxsen = sensitivity_max(attributor.attribute, \
             #                             input_embed, \
             #                             n_perturb_samples = 1, \
@@ -116,8 +118,9 @@ def evaluate_sample(model_wrapper,
             #                             target = target_idx, \
             #                             additional_forward_args = afa)
             # maxsens.append(maxsen.cpu().item())
-            break
-    return infids, maxsens, times
+            # break
+    # return infids, maxsens, times
+    return infids, times
 
 def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_samples):
     print(f"Evaluating {method_name} on {model_name}")
@@ -153,7 +156,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
     # Note: We can't use the advantages of batch processing for attribution
     # because of the prediction threshold
     infids = {pert: [] for pert in PERTS}
-    maxsens = []
+    # maxsens = []
     times = []
     for idx, tup in enumerate(dataloader):
         # Evaluate only a subset of the dataset
@@ -175,7 +178,8 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
         preds = model_wrapper(input_embed, afa)[0]
 
         # Attribute and evaluate sample
-        infids_sample, maxsens_sample, times_sample = evaluate_sample(model_wrapper, \
+        # infids_sample, maxsens_sample, times_sample = evaluate_sample(model_wrapper, \
+        infids_sample, times_sample = evaluate_sample(model_wrapper, \
                                                         method_name, \
                                                         attributor, \
                                                         preds, \
@@ -187,7 +191,7 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
 
         for pert in PERTS:
             infids[pert].extend(infids_sample[pert])
-        maxsens.extend(maxsens_sample)
+        # maxsens.extend(maxsens_sample)
         times.extend(times_sample)
         break
 
@@ -196,22 +200,20 @@ def evaluate_model(model_name, model, method_name, dataloader, n_steps, n_sample
 
     results = {}
     for pert in PERTS:
-        mean_infid = round(mean(infids[pert]), 4) if len(infids) > 0 else 0
-        results[f'infid_{pert}'] = mean_infid
-    mean_maxsen = round(mean(maxsens), 4) if len(maxsens) > 0 else 0
-    results['max_sen'] = mean_maxsen
-    mean_time = round(mean(times), 4) if len(times) > 0 else 0
-    results['time'] = mean_time
+        results[f'infid_{pert}'] = infids[pert]
+    # results['max_sen'] = maxsens
+    results['time'] = times
     print("Finished")
     return results
 
 def save_results_to_file(model_name, method_name, results, n_steps, n_samples):
     basename = f'results/{model_name}_{method_name}'
     if method_name == 'ixg' or method_name == 'ra':
-        filename = basename + '.txt'
+        filename = basename + '.csv'
     elif method_name == 'ig':
-        filename = basename + f'_nsteps{n_steps}.txt'
+        filename = basename + f'_nsteps{n_steps}.csv'
     elif method_name == 'shap':
-        filename = basename + f'_nsamples{n_samples}.txt'
-    with open(filename, 'w') as file:
-        file.write(json.dumps(results))
+        filename = basename + f'_nsamples{n_samples}.csv'
+    df = pd.DataFrame.from_dict(results, orient='columns')
+    print("df.head():", df.head())
+    df.to_csv(filename)
