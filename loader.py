@@ -6,9 +6,11 @@ import caml.datasets as datasets
 import torch
 import argparse
 
+
 def load_laat_data(args):
     _, _, _, test_data, vocab, args_new, _, _ = laattraining.prepare_data(args)
     return test_data, vocab, args_new
+
 
 def create_laat_dataloader(data, vocab, args):
     dataset = dataloaders.TextDataset(data, vocab,
@@ -18,6 +20,7 @@ def create_laat_dataloader(data, vocab, args):
     dataloader = dataloaders.TextDataLoader(dataset=dataset, vocab=vocab, batch_size=args.batch_size)
     return dataloader
 
+
 def load_laat(vocab, args):
     model = rnn.RNN(vocab, args)
     checkpoint = torch.load(args.best_model_path)
@@ -26,6 +29,7 @@ def load_laat(vocab, args):
     model.eval()
     model.to(vocab.device)
     return model
+
 
 def load_caml(args):
     # Copied from caml/learn/training.py
@@ -87,6 +91,7 @@ def load_caml(args):
     args_new.command = command
     args_final, model, optimizer, params, dicts = camltraining.init(args_new)
     return model, args_final, dicts
+
 
 def create_caml_dataloader(args, dicts):
     version = args.version

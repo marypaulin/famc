@@ -1,3 +1,5 @@
+import numpy as np
+
 # LAAT args from README
 LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--max_seq_length", "4000",
@@ -39,16 +41,19 @@ CAML_ARGS = [
     "--gpu"
 ]
 
-MODELS = ['laat', 'caml']
-METHODS = ['ra', 'ixg', 'ig', 'shap']   # Random Attributions, InputXGradient, Integrated Gradients, KernelSHAP
-PERTS = ['b', 'nb', 'ni']   # Perturbation functions for infidelity: Baseline, NoisyBaseline, NoisyInput
+MODELS = ['caml', 'laat']
+SCOPES = ['local', 'global']
+METHODS = {}
+METHODS['local'] = ['ra', 'g', 'ig']    # Random Attributions, Gradient, Integrated Gradients,
+METHODS['global'] = ['ra', 'gxi', 'ig', 'shap'] # Random Attributions, Gradient*Input, Integrated Gradients, KernelSHAP
 N_TEST = 3372  # Total number of test samples, hard coded to save computation time
 N_SUB = 50    # Run experiments only on a subset of test samples like Yeh did
-
 SEED = 10   # Run experiments on same subset for all methods
-THRESHOLD = 0.5   # Compute attributions only for text-label pairs with pred > THRESHOLD
-LB = -0.1   # Lower bound for random attribution (see attributions.ipynb)
-UB = 0.1    # Upper bound for random attribution
+SUB_BITS = np.array([0]*(N_TEST-N_SUB)+[1]*(N_SUB))
+np.random.seed(SEED)
+np.random.shuffle(SUB_BITS)  # Choose random subset of test samples
+THRESH = 0.5   # Compute attributions only for text-label pairs with pred > THRESH
+STDS = {'local': 0.000324, 'global': 0.001631}   # Standard deviations for random attributions
 N_STEPS = [10, 50, 100, 200]    # Number of steps for integral approximation for Integrated Gradients
 INT_BATCH = 5  # Internal batch size for Integrated Gradients
 N_SAMPLES = [10, 50, 100]  # Number of samples for surrogate model training in KernelSHAP
