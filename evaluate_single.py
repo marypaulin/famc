@@ -43,15 +43,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # Load model and data
-    if model_name == 'caml':
-        args = config.CAML_ARGS
-        model, args_new, dicts = loader.load_caml(args)
-        dataloader = loader.create_caml_dataloader(args_new, dicts)
-    elif model_name == 'laat':
-        args = config.LAAT_ARGS
-        test_data, vocab, args_new = loader.load_laat_data(args)
-        dataloader = loader.create_laat_dataloader(test_data, vocab, args_new)
-        model = loader.load_laat(vocab, args_new)
+    model, dataloader = loader.load_model_and_data(model_name)
 
     # Compute infids and runtime for specified scope and method
     results = evaluator.evaluate_model(model_name,

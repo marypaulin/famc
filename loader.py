@@ -6,6 +6,8 @@ import caml.datasets as datasets
 import torch
 import argparse
 
+import config
+
 
 def load_laat_data(args):
     _, _, _, test_data, vocab, args_new, _, _ = laattraining.prepare_data(args)
@@ -89,16 +91,29 @@ def load_caml(args):
     args_new = parser.parse_args(args)
     command = ' '.join(['python learn/training.py'] + args)
     args_new.command = command
-    args_final, model, optimizer, params, dicts = camltraining.init(args_new)
+    args_final, model, _, _, dicts = camltraining.init(args_new)
     return model, args_final, dicts
 
 
 def create_caml_dataloader(args, dicts):
     version = args.version
-    data_path = args.data_path
     filename = args.data_path.replace('train', 'test')   # Using test data
     n_labels = len(dicts['ind2c'])
     desc_embed = False  # Not using DR-CAML
-    ind2w = dicts['ind2w']
     dataloader = datasets.data_generator(filename, dicts, 1, n_labels, version=version, desc_embed=desc_embed)
     return dataloader
+
+
+def load_model_and_data(model_name):
+    if model_name == 'caml':
+        args = config.CAML_ARGS
+        model, args_new, dicts = load_caml(args)
+        dataloader = create_caml_dataloader(args_new, dicts)
+        # Convert caml dataloader to list because generator can't be iterated twice
+        dataloader = list(dataloader)
+    elif model_name == 'laat':
+        args = config.LAAT_ARGS
+        test_data, vocab, args_new = load_laat_data(args)
+        dataloader = create_laat_dataloader(test_data, vocab, args_new)
+        model = load_laat(vocab, args_new)
+    return model, dataloader
