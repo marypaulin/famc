@@ -168,7 +168,6 @@ def evaluate_model(model_name,
 
         infids.extend(infids_sample)
         times.extend(times_sample)
-        break
 
     remove_interpretable_embedding_layer(model, int_emb)
     model.train(mode=False)
@@ -187,9 +186,9 @@ def create_filename(model_name,
     if method_name in ['ra', 'g', 'gxi']:
         filename = basename + '.csv'
     elif method_name == 'ig':
-        filename = basename + f'_nsteps{n_steps}.csv'
+        filename = basename + f'{n_steps}.csv'
     elif method_name == 'shap':
-        filename = basename + f'_nsamples{n_samples}.csv'
+        filename = basename + f'{n_samples}.csv'
     return Path(filename)
 
 
