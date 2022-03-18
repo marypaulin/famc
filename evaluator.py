@@ -14,10 +14,10 @@ from pathlib import Path
 
 import config
 import attributor
+import loader
 
 METHODS = config.METHODS
-N_TEST = config.N_TEST
-N_SUB = config.N_SUB
+SUB_BITS = config.SUB_BITS
 SEED = config.SEED
 THRESH = config.THRESH
 INT_BATCH = config.INT_BATCH
@@ -97,19 +97,6 @@ def evaluate_sample(model_wrapper,
     return infids, times
 
 
-def prepare_input(model_name, tup, int_emb):
-    if model_name == 'laat':
-        input_indices, _, afa, _ = tup
-        input_indices = input_indices.to(DEVICE)
-    elif model_name == 'caml':
-        input_indices, afa, _, _, _ = tup
-        input_indices = torch.LongTensor(input_indices).to(DEVICE)
-        afa = torch.FloatTensor(afa).to(DEVICE)
-    input_embed = int_emb.indices_to_embeddings(input_indices).to(DEVICE)
-    base_embed = torch.zeros_like(input_embed).to(DEVICE)
-    return input_embed, base_embed, afa
-
-
 def evaluate_model(model_name,
                    model,
                    scope,
@@ -134,11 +121,6 @@ def evaluate_model(model_name,
     model.train()
     method = attributor.create_method(model_wrapper, scope, method_name)
 
-    # Choose random subset of test samples
-    sub_bits = np.array([0] * (N_TEST - N_SUB) + [1] * (N_SUB))
-    np.random.seed(SEED)
-    np.random.shuffle(sub_bits)
-
     # Load data in batches of size 1
     # Note: Can't use batch size > 1 for attribution
     # because of the prediction threshold
@@ -146,12 +128,12 @@ def evaluate_model(model_name,
     times = []
     for idx, tup in enumerate(dataloader):
         # Evaluate only a subset of the dataset
-        if sub_bits[idx] == 0:
+        if SUB_BITS[idx] == 0:
             continue
         print("Evaluating sample", idx)
 
         # Prepare input
-        input_embed, base_embed, afa = prepare_input(model_name, tup, int_emb)
+        input_embed, base_embed, afa = loader.prepare_input(model_name, tup, int_emb)
         preds = model_wrapper(input_embed, afa)[0]
 
         # Attribute and evaluate sample

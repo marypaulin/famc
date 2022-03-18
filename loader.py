@@ -8,6 +8,8 @@ import argparse
 
 import config
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 def load_laat_data(args):
     _, _, _, test_data, vocab, args_new, _, _ = laattraining.prepare_data(args)
@@ -117,3 +119,16 @@ def load_model_and_data(model_name):
         dataloader = create_laat_dataloader(test_data, vocab, args_new)
         model = load_laat(vocab, args_new)
     return model, dataloader
+
+
+def prepare_input(model_name, tup, int_emb):
+    if model_name == 'laat':
+        input_indices, _, afa, _ = tup
+        input_indices = input_indices.to(DEVICE)
+    elif model_name == 'caml':
+        input_indices, afa, _, _, _ = tup
+        input_indices = torch.LongTensor(input_indices).to(DEVICE)
+        afa = torch.FloatTensor(afa).to(DEVICE)
+    input_embed = int_emb.indices_to_embeddings(input_indices).to(DEVICE)
+    base_embed = torch.zeros_like(input_embed).to(DEVICE)
+    return input_embed, base_embed, afa
