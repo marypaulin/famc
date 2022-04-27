@@ -9,6 +9,7 @@ from captum.attr import KernelShap
 import torch
 from matplotlib import pyplot as plt
 import pandas as pd
+from pathlib import Path
 
 import config
 import loader
@@ -93,6 +94,8 @@ def check_completeness(model_name,
                        dataloader,
                        n_steps=None,
                        n_samples=None):
+    # Method to check if completeness property is fulfilled
+    # Implemented for IG but can be used for other methods as well
     print(f"Checking completeness for {scope} {method_name} on {model_name}")
     # Define model wrapper and create interpretable embedding layer
     if model_name == 'laat':
@@ -148,20 +151,47 @@ def check_completeness(model_name,
     return sums, diffs
 
 
+def create_completeness_filename(model_name,
+                                 method_name,
+                                 n_steps):
+    filename = f"results/completeness_{model_name}_{method_name}{n_steps}.csv"
+    return Path(filename)
+
+
 def save_completeness_to_file(model_name,
                               method_name,
                               sums,
-                              diffs):
+                              diffs,
+                              n_steps):
+    # Method to save completeness results to file
+    # Implemented for IG but can be used for other methods as well
     results = {'sums': sums, 'diffs': diffs}
-    filename = f"results/completeness_{model_name}_{method_name}.csv"
+    filename = create_completeness_filename(model_name, method_name, n_steps)
     df = pd.DataFrame.from_dict(results, orient='columns')
     df.to_csv(filename)
+
+
+def read_completeness_from_file(model_name,
+                                method_name,
+                                n_steps):
+    # Method to read completeness results from file
+    # Implemented for IG but can be used for other methods as well
+    filename = create_completeness_filename(model_name, method_name, n_steps)
+    if filename.is_file():
+        df = pd.read_csv(filename)
+        return df
+    else:
+        print("File does not exist")
+        return None
 
 
 def plot_completeness(model_name,
                       method_name,
                       sums,
-                      diffs):
+                      diffs,
+                      n_steps=None):
+    # Method to plot completeness results to file
+    # Implemented for IG but can be used for other methods as well
     fig, axs = plt.subplots(1, 1, figsize=(5,5))
     # Scatterplot of sums and diffs
     axs.scatter(sums, diffs)
@@ -170,6 +200,6 @@ def plot_completeness(model_name,
     ylabel = 'pred_input - pred_base'
     axs.set(axisbelow=True, xlabel=xlabel, ylabel=ylabel)
     # Save plot
-    basename = f"plots/scatterplot_completeness_{model_name}_{method_name}"
+    basename = f"plots/scatterplot_completeness_{model_name}_{method_name}{n_steps}"
     fig.savefig(f"{basename}.eps", format="eps")
     fig.savefig(f"{basename}.png", format="png")

@@ -48,9 +48,17 @@ def perturb_func_nb_global(input_embed, base_embed):
     return base_embed_expanded - noise
 
 
+@infidelity_perturb_func_decorator(multipy_by_inputs=True)
+def perturb_func_b_global(input_embed, base_embed):
+    # Baseline perturbation for global attributions
+    n_perturb_samples = input_embed.size()[0]
+    base_embed_expanded = base_embed.repeat(n_perturb_samples, 1, 1)
+    return base_embed_expanded
+
+
 perturb_funcs = {
     'local': perturb_func_nb_local,
-    'global': perturb_func_nb_global
+    'global': perturb_func_b_global
 }
 
 
@@ -122,7 +130,7 @@ def evaluate_model(model_name,
     method = attributor.create_method(model_wrapper, scope, method_name)
 
     # Load data in batches of size 1
-    # Note: Can't use batch size > 1 for attribution
+    # Note: Using batch size > 1 for attribution is non-trivial
     # because of the prediction threshold
     infids = []
     times = []
@@ -164,7 +172,7 @@ def create_filename(model_name,
                     method_name,
                     n_steps=None,
                     n_samples=None):
-    basename = f'results/{model_name}_{scope}_{method_name}'
+    basename = f'results/infid_second/{model_name}_{scope}_{method_name}'
     if method_name in ['ra', 'g', 'gxi']:
         filename = basename + '.csv'
     elif method_name == 'ig':
