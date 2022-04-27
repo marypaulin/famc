@@ -1,32 +1,55 @@
 # Feature attribution for automatic medical coding
 
-This project provides the code for the master thesis "Feature attribution for automatic medical coding". I apply several feature attribution methods to two different medical coding models, LAAT and CAML. I evaluate the attributions using Infidelity and Max-Sensitivity.
+This project provides the code for the master's thesis "Feature attribution for automatic medical coding". We apply several feature attribution methods to two medical coding models, see section Models. We evaluate the attributions using the infidelity metric, see section Experiments.
 
-## Requirements
+## Dependencies
 
-Run `conda create --name famc --file requirements.txt` and `conda activate famc`
+Create conda environment: `conda env create -f environment.yml`
+
+Activate conda environment: `conda activate famc`
 
 ## Data preparation
 
-LAAT and CAML are trained on the MIMIC-III dataset. Access to the dataset is restricted, visit physionet.org for more information. The feature attribution experiments use the preprocessing from LAAT and CAML, respectively.
+The two models, CAML and LAAT, are trained on the MIMIC-III dataset. Access to the dataset is restricted, visit physionet.org for more information (there is a CITI course to complete in order to gain access). 
 
-For LAAT data, install the MIMIC-III database with PostgreSQL following this instruction.
+We use the preprocessing from CAML and LAAT, respectively, for the feature attribution experiments.
 
-Generate the train/valid/test sets using
-`PSQL_PW='INSERT_PW_HERE' python3 laat/src/util/mimiciii_data_processing.py` (TODO: verify)
+For CAML preprocessing, see CAML repo (no time to document this).
 
-For CAML data, TBD
+For LAAT preprocessing, install the MIMIC-III database with PostgreSQL, see https://mimic.mit.edu/.
+The MIMIC-III PostgreSQL database is already installed in the KD cluster, ask Ahmet for access (after completing the CITI course).
+
+Generate the train/valid/test sets using something like
+
+`PSQL_PW='INSERT_PW_HERE' python3 laat/src/util/mimiciii_data_processing.py`
 
 ## Models
 
-Trained versions of LAAT and CAML are available in the respective subfolders.
+Trained versions of CAML and LAAT are available in the respective subfolders caml/ and laat/.
+We copied these from the original repos and adjusted them for our needs, see git history.
+
+CAML repo: https://github.com/jamesmullenbach/caml-mimic
+
+CAML paper: https://arxiv.org/abs/1802.05695
+
+LAAT repo: https://github.com/aehrc/LAAT
+
+LAAT paper: https://www.ijcai.org/proceedings/2020/461
 
 In case you need to retrain LAAT, run `python3 -m laat.src.run`
 
-## TODO README
+## Experiments
 
-- Cite LAAT, CAML, Yeh
-- Insert requirements and create file requirements.txt
-- Insert link for Postgres instruction
-- Explain the experiments (high-level)
-- Explain CAML preprocessing and adjust jupyter notebook
+We use the [Captum library](https://captum.ai/) to calculate feature attributions on CAML and LAAT, and to evaluate them using the infidelity metric.
+
+Infidelity paper: https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf
+
+Evaluate all attribution methods on both models using `evaluate_all.py` and `visualize_evaluation.ipynb`
+
+Evaluate a single attribution method on one model using `evaluate_single.py`
+
+Check the completeness property for an attribution method using `check_completeness.py` and `visualize_completeness.ipynb`
+
+Visualize attributions using `visualize_attributions.ipynb`
+
+Check data statistics using `data_statistics.ipynb`

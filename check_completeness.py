@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     for model_name in config.MODELS:
         model, dataloader = loader.load_model_and_data(model_name)
-        for n_steps in [10, 100]:
+        for n_steps in [10, 100, 200, 300]:
             sums, diffs = attributor.check_completeness(model_name,
                                                         model,
                                                         scope,

@@ -1,6 +1,6 @@
 import numpy as np
 
-# LAAT args from README
+# LAAT args from LAAT README
 LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--max_seq_length", "4000",
     "--n_epoch", "50",
@@ -24,7 +24,7 @@ LAAT_ARGS = ["--problem_name", "mimic-iii_2_full",
     "--hidden_size", "512"
 ]
 
-# CAML args from evaluate_model.sh
+# CAML args from CAML evaluate_model.sh
 CAML_ARGS = [
     "caml/mimicdata/mimic3/train_full.csv",
     "caml/mimicdata/mimic3/vocab.csv",
@@ -53,7 +53,7 @@ SUB_BITS = np.array([0]*(N_TEST-N_SUB)+[1]*(N_SUB))
 np.random.seed(SEED)
 np.random.shuffle(SUB_BITS)  # Choose random subset of test samples
 THRESH = 0.5   # Compute attributions only for text-label pairs with pred > THRESH
-STDS = {'local': 0.000324, 'global': 0.001631}   # Standard deviations for random attributions
+STDS = {'local': 0.000324, 'global': 0.001631}   # Standard deviations for random attributions, see visualize_attributions.ipynb
 N_STEPS = [10, 50, 100, 200]    # Number of steps for integral approximation for Integrated Gradients
 INT_BATCH = 5  # Internal batch size for Integrated Gradients
 N_SAMPLES = [10, 50, 100]  # Number of samples for surrogate model training in KernelSHAP
