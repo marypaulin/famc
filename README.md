@@ -1,6 +1,8 @@
 # Feature attribution for automatic medical coding
 
-This project provides the code for the master's thesis "Feature attribution for automatic medical coding". I apply several feature attribution methods to two medical coding models, see section Models. I evaluate the attributions using the infidelity metric, see section Experiments.
+This repository provides the code for my master's thesis exploring explainable AI for text classification with deep neural networks in the context of automatic medical coding. It investigates how to generate and evaluate meaningful explanations for model predictions, aiming to improve trust and transparency in high-stakes healthcare applications. The master's thesis can be found here: https://publica.fraunhofer.de/entities/publication/47fc33b2-edde-4e97-af64-b47ecbca6247
+
+I apply several feature attribution methods to two medical coding models, see section Models. I evaluate the attributions using the infidelity metric, see section Experiments.
 
 ## Dependencies
 
