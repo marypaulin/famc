@@ -1,6 +1,6 @@
 # Feature attribution for automatic medical coding
 
-This project provides the code for the master's thesis "Feature attribution for automatic medical coding". We apply several feature attribution methods to two medical coding models, see section Models. We evaluate the attributions using the infidelity metric, see section Experiments.
+This project provides the code for the master's thesis "Feature attribution for automatic medical coding". I apply several feature attribution methods to two medical coding models, see section Models. I evaluate the attributions using the infidelity metric, see section Experiments.
 
 ## Dependencies
 
@@ -12,21 +12,20 @@ Activate conda environment: `conda activate famc`
 
 The two models, CAML and LAAT, are trained on the MIMIC-III dataset. Access to the dataset is restricted, visit physionet.org for more information (there is a CITI course to complete in order to gain access). 
 
-We use the preprocessing from CAML and LAAT, respectively, for the feature attribution experiments.
+I use the preprocessing from CAML and LAAT, respectively, for the feature attribution experiments.
 
-For CAML preprocessing, see CAML repo (no time to document this).
+For CAML preprocessing, see CAML repo.
 
 For LAAT preprocessing, install the MIMIC-III database with PostgreSQL, see https://mimic.mit.edu/.
-The MIMIC-III PostgreSQL database is already installed in the KD cluster, ask Ahmet for access (after completing the CITI course).
 
-Generate the train/valid/test sets using something like
+Generate the train/valid/test sets using
 
 `PSQL_PW='INSERT_PW_HERE' python3 laat/src/util/mimiciii_data_processing.py`
 
 ## Models
 
 Trained versions of CAML and LAAT are available in the respective subfolders caml/ and laat/.
-We copied these from the original repos and adjusted them for our needs, see git history.
+I copied these from the original repos and adjusted them for my needs, see git history.
 
 CAML repo: https://github.com/jamesmullenbach/caml-mimic
 
@@ -40,7 +39,7 @@ In case you need to retrain LAAT, run `python3 -m laat.src.run`
 
 ## Experiments
 
-We use the [Captum library](https://captum.ai/) to calculate feature attributions on CAML and LAAT, and to evaluate them using the infidelity metric.
+I use the [Captum library](https://captum.ai/) to calculate feature attributions on CAML and LAAT, and to evaluate them using the infidelity metric.
 
 Infidelity paper: https://proceedings.neurips.cc/paper/2019/file/a7471fdc77b3435276507cc8f2dc2569-Paper.pdf
 
